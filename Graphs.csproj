@@ -8,4 +8,10 @@
     <UseWPF>true</UseWPF>
   </PropertyGroup>
 
+  <ItemGroup>
+    <Folder Include="Visual\Models\" />
+    <Folder Include="Visual\LayOuts\" />
+    <Folder Include="Visual\Rendering\" />
+  </ItemGroup>
+
 </Project>
