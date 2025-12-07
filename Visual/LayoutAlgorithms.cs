@@ -52,23 +52,4 @@ namespace GraphEditor.Visual
         }
     }
 
-    public class ForceLayout : ILayoutAlgorithm
-    {
-        public IReadOnlyDictionary<string, Point> ComputePositions(IGraphModel graph)
-        {
-            var result = new Dictionary<string, Point>();
-            var random = new Random();
-
-            // Простая реализация - случайные позиции
-            foreach (var vertexId in graph.Vertices.Keys)
-            {
-                result[vertexId] = new Point(
-                    random.Next(100, 700),
-                    random.Next(100, 500)
-                );
-            }
-
-            return result;
-        }
-    }
 }
