@@ -8,46 +8,82 @@
         Height="600" 
         Width="800"
         WindowStartupLocation="CenterScreen">
-    
+
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
-        
+
         <!-- Меню -->
         <Menu Grid.Row="0" Background="LightGray">
             <MenuItem Header="_File">
-                <MenuItem x:Name="MenuItemFileOpen" 
-                          Header="_Open" 
-                          InputGestureText="Ctrl+O"/>
-                <MenuItem x:Name="MenuItemFileSave" 
-                          Header="_Save" 
-                          InputGestureText="Ctrl+S"/>
+                <MenuItem x:Name="MenuItemFileOpen" Header="_Open" InputGestureText="Ctrl+O"/>
+                <MenuItem x:Name="MenuItemFileSave" Header="_Save" InputGestureText="Ctrl+S"/>
                 <Separator/>
-                <MenuItem x:Name="MenuItemFileExit" 
-                          Header="E_xit" 
-                          InputGestureText="Alt+F4"/>
+                <MenuItem x:Name="MenuItemFileExit" Header="E_xit" InputGestureText="Alt+F4"/>
             </MenuItem>
-            
+            <MenuItem Header="_Visual">
+                <MenuItem x:Name="MenuItemLayoutCircle" Header="_Circle Layout"/>
+                <MenuItem x:Name="MenuItemLayoutRandom" Header="_Random Layout"/>
+                <MenuItem x:Name="MenuItemLayoutForce" Header="_Force Layout"/>
+                <Separator/>
+                <MenuItem x:Name="MenuItemResetColors" Header="_Reset Colors"/>
+            </MenuItem>
             <MenuItem Header="_Help">
-                <MenuItem x:Name="MenuItemHelpAbout" 
-                          Header="_About"/>
+                <MenuItem x:Name="MenuItemHelpAbout" Header="_About"/>
             </MenuItem>
         </Menu>
-        
-        <!-- Основная область с Canvas -->
-        <ScrollViewer Grid.Row="1" 
-                      HorizontalScrollBarVisibility="Auto" 
-                      VerticalScrollBarVisibility="Auto">
-            <Canvas x:Name="GraphCanvas" 
-                    Background="White"
-                    Focusable="True">
+
+        <!-- Простая панель инструментов -->
+        <Border Grid.Row="1" Background="#F0F0F0" BorderBrush="#C0C0C0" BorderThickness="0,1,0,1">
+            <StackPanel Orientation="Horizontal" Margin="10,5">
+                <!-- Группа 1 -->
+                <Button x:Name="BtnAddVertex" Content="Add Vertex" Width="100" Height="30" Margin="0,0,5,0"/>
+                <Button x:Name="BtnAddEdge" Content="Add Edge" Width="90" Height="30" Margin="0,0,15,0"/>
+
+                <!-- Разделитель -->
+                <Rectangle Width="1" Fill="#C0C0C0" Margin="0,0,15,0"/>
+
+                <!-- Группа 2 -->
+                <Button x:Name="BtnCircleLayout" Content="Circle" Width="80" Height="30" Margin="0,0,5,0"/>
+                <Button x:Name="BtnRandomLayout" Content="Random" Width="90" Height="30" Margin="0,0,5,0"/>
+                <Button x:Name="BtnForceLayout" Content="Force" Width="80" Height="30" Margin="0,0,15,0"/>
+
+                <!-- Разделитель -->
+                <Rectangle Width="1" Fill="#C0C0C0" Margin="0,0,15,0"/>
+
+                <!-- Группа 3 -->
+                <Button x:Name="BtnSelectMode" Content="Select" Width="80" Height="30" Margin="0,0,5,0"/>
+                <Button x:Name="BtnDragMode" Content="Drag" Width="80" Height="30"/>
+            </StackPanel>
+        </Border>
+
+        <!-- Canvas -->
+        <ScrollViewer Grid.Row="2" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto">
+            <Canvas x:Name="GraphCanvas" Background="White" Focusable="True">
                 <Canvas.InputBindings>
                     <KeyBinding Gesture="Ctrl+O"/>
                     <KeyBinding Gesture="Ctrl+S"/>
+                    <KeyBinding x:Name="KeyBindingCircleLayout" Gesture="Ctrl+1"/>
+                    <KeyBinding x:Name="KeyBindingRandomLayout" Gesture="Ctrl+2"/>
+                    <KeyBinding x:Name="KeyBindingForceLayout" Gesture="Ctrl+3"/>
                 </Canvas.InputBindings>
+                <Canvas x:Name="TempCanvas" Visibility="Collapsed"/>
+                <Rectangle x:Name="SelectionRect" Stroke="Blue" StrokeThickness="1" Fill="LightBlue" Opacity="0.3" Visibility="Collapsed"/>
             </Canvas>
         </ScrollViewer>
+
+        <!-- Простой StatusBar -->
+        <StatusBar Grid.Row="2" VerticalAlignment="Bottom" Background="#F0F0F0" Height="25">
+            <TextBlock x:Name="StatusText" Text="Ready" Margin="10,0"/>
+            <Separator/>
+            <TextBlock x:Name="VertexCountText" Text="Vertices: 0" Margin="10,0"/>
+            <Separator/>
+            <TextBlock x:Name="EdgeCountText" Text="Edges: 0" Margin="10,0"/>
+            <Separator/>
+            <TextBlock x:Name="LayoutStatusText" Text="Layout: None" Margin="10,0"/>
+        </StatusBar>
     </Grid>
 </Window>
