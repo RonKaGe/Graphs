@@ -4,7 +4,9 @@ using GraphEditor.Core.Services;
 using GraphEditor.Visual;
 using Microsoft.Win32;
 using System;
+using System.Collections.Generic;
 using System.ComponentModel;
+using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Windows;
 using System.Windows.Input;
@@ -33,6 +35,9 @@ namespace GraphEditor.ViewModels
         public ICommand RandomLayoutCommand { get; }
         public ICommand ForceLayoutCommand { get; }
         public ICommand ResetColorsCommand { get; }
+        public ICommand AddVertexCommand { get; }
+        public ICommand AddEdgeCommand { get; }
+        public ICommand DeleteCommand { get; }
 
         // === Свойства для привязки ===
         private string _statusText = "Ready";
@@ -88,10 +93,16 @@ namespace GraphEditor.ViewModels
             RandomLayoutCommand = new RelayCommand(ApplyRandomLayout);
             ForceLayoutCommand = new RelayCommand(ApplyForceLayout);
             ResetColorsCommand = new RelayCommand(ResetColors);
+            AddVertexCommand = new RelayCommand(AddVertex);
+            AddEdgeCommand = new RelayCommand(AddEdge);
+            DeleteCommand = new RelayCommand(DeleteSelected);
 
             // Подписка на изменения
             _graphModel.Changed += OnGraphChanged;
             _visualModel.VisualChanged += OnVisualChanged;
+
+            // Добавляем тестовые вершины для демонстрации
+            AddTestData();
 
             // Обновление счётчиков
             UpdateCounters();
@@ -122,6 +133,7 @@ namespace GraphEditor.ViewModels
             {
                 MessageBox.Show($"Error opening file: {ex.Message}", "Error",
                     MessageBoxButton.OK, MessageBoxImage.Error);
+                StatusText = "Error opening file";
             }
         }
 
@@ -146,6 +158,7 @@ namespace GraphEditor.ViewModels
             {
                 MessageBox.Show($"Error saving file: {ex.Message}", "Error",
                     MessageBoxButton.OK, MessageBoxImage.Error);
+                StatusText = "Error saving file";
             }
         }
 
@@ -161,57 +174,169 @@ namespace GraphEditor.ViewModels
                 "Team Project:\n" +
                 "- UI & Integration: Антон\n" +
                 "- Graph Model: Артём\n" +
-                "- Visual Components: Антон\n\n" +
+                "- Visual Components: Иван\n\n" +
                 "Using MVVM pattern with clean architecture.",
                 "About Graph Editor",
                 MessageBoxButton.OK,
                 MessageBoxImage.Information);
+
+            StatusText = "About dialog shown";
         }
 
         private void ApplyCircleLayout()
         {
-            _visualModel.ApplyLayout(_graphModel, _circleLayout);
-            LayoutStatus = "Circle Layout";
-            StatusText = "Applied circle layout";
+            try
+            {
+                _visualModel.ApplyLayout(_graphModel, _circleLayout);
+                LayoutStatus = "Circle Layout";
+                StatusText = "Applied circle layout";
+            }
+            catch (Exception ex)
+            {
+                StatusText = $"Error applying circle layout: {ex.Message}";
+            }
         }
 
         private void ApplyRandomLayout()
         {
-            _visualModel.ApplyLayout(_graphModel, _randomLayout);
-            LayoutStatus = "Random Layout";
-            StatusText = "Applied random layout";
+            try
+            {
+                _visualModel.ApplyLayout(_graphModel, _randomLayout);
+                LayoutStatus = "Random Layout";
+                StatusText = "Applied random layout";
+            }
+            catch (Exception ex)
+            {
+                StatusText = $"Error applying random layout: {ex.Message}";
+            }
         }
 
         private void ApplyForceLayout()
         {
-            _visualModel.ApplyLayout(_graphModel, _forceLayout);
-            LayoutStatus = "Force Layout";
-            StatusText = "Applied force layout";
+            try
+            {
+                _visualModel.ApplyLayout(_graphModel, _forceLayout);
+                LayoutStatus = "Force Layout";
+                StatusText = "Applied force layout";
+            }
+            catch (Exception ex)
+            {
+                StatusText = $"Error applying force layout: {ex.Message}";
+            }
         }
 
         private void ResetColors()
         {
-            _visualModel.ResetColors(Colors.LightBlue, Colors.Black);
-            StatusText = "Colors reset to default";
+            try
+            {
+                _visualModel.ResetColors(Colors.LightBlue, Colors.Black);
+                StatusText = "Colors reset to default";
+            }
+            catch (Exception ex)
+            {
+                StatusText = $"Error resetting colors: {ex.Message}";
+            }
+        }
+
+        private void AddVertex()
+        {
+            try
+            {
+                string newId = $"V{_graphModel.Vertices.Count + 1}";
+                _graphModel.AddVertex(newId, $"Vertex {newId}");
+                StatusText = $"Added vertex {newId}";
+            }
+            catch (Exception ex)
+            {
+                StatusText = $"Error adding vertex: {ex.Message}";
+            }
+        }
+
+        private void AddEdge()
+        {
+            try
+            {
+                // Исправленная строка - нужно получить количество вершин
+                if (_graphModel.Vertices.Count >= 2)
+                {
+                    // Получаем ключи как список
+                    var vertexList = _graphModel.Vertices.Keys.ToList();
+
+                    string source = vertexList[0];
+                    string target = vertexList[1];
+
+                    string edgeId = $"E{_graphModel.Edges.Count + 1}";
+                    _graphModel.AddEdge(edgeId, source, target, weight: 1.0);
+                    StatusText = $"Added edge {edgeId} from {source} to {target}";
+                }
+                else
+                {
+                    StatusText = "Need at least 2 vertices to add an edge";
+                }
+            }
+            catch (Exception ex)
+            {
+                StatusText = $"Error adding edge: {ex.Message}";
+            }
+        }
+
+        private void DeleteSelected()
+        {
+            StatusText = "Delete command clicked (selection not implemented yet)";
         }
 
         // === Вспомогательные методы ===
         private void ReplaceGraph(IGraphModel newGraph)
         {
-            // Очищаем старый граф
-            foreach (var vertexId in _graphModel.Vertices.Keys)
-                _graphModel.RemoveVertex(vertexId);
+            try
+            {
+                // Очищаем старый граф
+                var verticesToRemove = new List<string>(_graphModel.Vertices.Keys);
+                foreach (var vertexId in verticesToRemove)
+                    _graphModel.RemoveVertex(vertexId);
 
-            // Добавляем новые вершины
-            foreach (var vertex in newGraph.Vertices.Values)
-                _graphModel.AddVertex(vertex.Id, vertex.Label);
+                // Добавляем новые вершины
+                foreach (var vertex in newGraph.Vertices.Values)
+                    _graphModel.AddVertex(vertex.Id, vertex.Label);
 
-            // Добавляем новые рёбра
-            foreach (var edge in newGraph.Edges.Values)
-                _graphModel.AddEdge(edge.Id, edge.Source, edge.Target, edge.Weight, edge.Capacity);
+                // Добавляем новые рёбра
+                foreach (var edge in newGraph.Edges.Values)
+                    _graphModel.AddEdge(edge.Id, edge.Source, edge.Target, edge.Weight, edge.Capacity);
 
-            // Обновляем визуальную модель
-            _visualModel.InitializeFromGraph(_graphModel);
+                // Обновляем визуальную модель
+                _visualModel.InitializeFromGraph(_graphModel);
+            }
+            catch (Exception ex)
+            {
+                StatusText = $"Error replacing graph: {ex.Message}";
+            }
+        }
+
+        private void AddTestData()
+        {
+            try
+            {
+                // Добавляем 5 тестовых вершин
+                for (int i = 1; i <= 5; i++)
+                {
+                    string id = $"V{i}";
+                    _graphModel.AddVertex(id, $"Vertex {i}");
+                }
+
+                // Добавляем несколько рёбер
+                if (_graphModel.Vertices.Count >= 3)
+                {
+                    _graphModel.AddEdge("E1", "V1", "V2", weight: 2.5);
+                    _graphModel.AddEdge("E2", "V2", "V3", weight: 1.0);
+                    _graphModel.AddEdge("E3", "V3", "V4", weight: 3.0);
+                    _graphModel.AddEdge("E4", "V4", "V5", weight: 2.0);
+                    _graphModel.AddEdge("E5", "V5", "V1", weight: 1.5);
+                }
+            }
+            catch (Exception ex)
+            {
+                StatusText = $"Error adding test data: {ex.Message}";
+            }
         }
 
         private void OnGraphChanged(object? sender, EventArgs e)
@@ -222,6 +347,7 @@ namespace GraphEditor.ViewModels
         private void OnVisualChanged(object? sender, EventArgs e)
         {
             // Можно добавить обновление UI здесь
+            StatusText = "Visual changed";
         }
 
         private void UpdateCounters()

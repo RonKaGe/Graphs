@@ -5,85 +5,207 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         mc:Ignorable="d"
         Title="Graph Editor" 
-        Height="600" 
-        Width="800"
+        Height="700" 
+        Width="1000"
         WindowStartupLocation="CenterScreen">
 
     <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="12*"/>
+            <ColumnDefinition Width="113*"/>
+        </Grid.ColumnDefinitions>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
-        <!-- Меню -->
-        <Menu Grid.Row="0" Background="LightGray">
+        <!-- 1. МЕНЮ -->
+        <Menu Grid.Row="0" Background="#FFE0E0E0" Grid.ColumnSpan="2" Margin="0,0,0,18">
             <MenuItem Header="_File">
-                <MenuItem x:Name="MenuItemFileOpen" Header="_Open" InputGestureText="Ctrl+O"/>
-                <MenuItem x:Name="MenuItemFileSave" Header="_Save" InputGestureText="Ctrl+S"/>
+                <MenuItem Header="_Open" 
+                          Command="{Binding OpenCommand}" 
+                          InputGestureText="Ctrl+O"/>
+                <MenuItem Header="_Save" 
+                          Command="{Binding SaveCommand}" 
+                          InputGestureText="Ctrl+S"/>
                 <Separator/>
-                <MenuItem x:Name="MenuItemFileExit" Header="E_xit" InputGestureText="Alt+F4"/>
+                <MenuItem Header="E_xit" 
+                          Command="{Binding ExitCommand}" 
+                          InputGestureText="Alt+F4"/>
             </MenuItem>
-            <MenuItem Header="_Visual">
-                <MenuItem x:Name="MenuItemLayoutCircle" Header="_Circle Layout"/>
-                <MenuItem x:Name="MenuItemLayoutRandom" Header="_Random Layout"/>
-                <MenuItem x:Name="MenuItemLayoutForce" Header="_Force Layout"/>
+
+            <MenuItem Header="_Edit">
+                <MenuItem Header="Add _Vertex" 
+                          Command="{Binding AddVertexCommand}"/>
+                <MenuItem Header="Add _Edge" 
+                          Command="{Binding AddEdgeCommand}"/>
                 <Separator/>
-                <MenuItem x:Name="MenuItemResetColors" Header="_Reset Colors"/>
+                <MenuItem Header="_Delete" 
+                          Command="{Binding DeleteCommand}" 
+                          InputGestureText="Delete"/>
             </MenuItem>
+
+            <MenuItem Header="_Layout">
+                <MenuItem Header="Circle Layout" 
+                          Command="{Binding CircleLayoutCommand}"/>
+                <MenuItem Header="Random Layout" 
+                          Command="{Binding RandomLayoutCommand}"/>
+                <MenuItem Header="Force Layout" 
+                          Command="{Binding ForceLayoutCommand}"/>
+                <Separator/>
+                <MenuItem Header="Reset Colors" 
+                          Command="{Binding ResetColorsCommand}"/>
+            </MenuItem>
+
             <MenuItem Header="_Help">
-                <MenuItem x:Name="MenuItemHelpAbout" Header="_About"/>
+                <MenuItem Header="_About" 
+                          Command="{Binding AboutCommand}"/>
             </MenuItem>
         </Menu>
 
-        <!-- Простая панель инструментов -->
-        <Border Grid.Row="1" Background="#F0F0F0" BorderBrush="#C0C0C0" BorderThickness="0,1,0,1">
-            <StackPanel Orientation="Horizontal" Margin="10,5">
-                <!-- Группа 1 -->
-                <Button x:Name="BtnAddVertex" Content="Add Vertex" Width="100" Height="30" Margin="0,0,5,0"/>
-                <Button x:Name="BtnAddEdge" Content="Add Edge" Width="90" Height="30" Margin="0,0,15,0"/>
+        <!-- 2. ПАНЕЛЬ ИНСТРУМЕНТОВ -->
+        <ToolBar Background="#FFE8E8E8" Grid.ColumnSpan="2" Margin="0,18,0,18" Grid.RowSpan="2">
+            <Button Content="📂 Open" 
+                    Command="{Binding OpenCommand}" 
+                    Margin="2" 
+                    Padding="10,5"
+                    ToolTip="Open graph file"/>
+            <Button Content="💾 Save" 
+                    Command="{Binding SaveCommand}" 
+                    Margin="2" 
+                    Padding="10,5"
+                    ToolTip="Save graph file"/>
 
-                <!-- Разделитель -->
-                <Rectangle Width="1" Fill="#C0C0C0" Margin="0,0,15,0"/>
+            <Separator/>
 
-                <!-- Группа 2 -->
-                <Button x:Name="BtnCircleLayout" Content="Circle" Width="80" Height="30" Margin="0,0,5,0"/>
-                <Button x:Name="BtnRandomLayout" Content="Random" Width="90" Height="30" Margin="0,0,5,0"/>
-                <Button x:Name="BtnForceLayout" Content="Force" Width="80" Height="30" Margin="0,0,15,0"/>
+            <Button Content="➕ Vertex" 
+                    Command="{Binding AddVertexCommand}" 
+                    Margin="2" 
+                    Padding="10,5"
+                    ToolTip="Add new vertex"/>
+            <Button Content="🔗 Edge" 
+                    Command="{Binding AddEdgeCommand}" 
+                    Margin="2" 
+                    Padding="10,5"
+                    ToolTip="Add new edge"/>
+            <Button Content="❌ Delete" 
+                    Command="{Binding DeleteCommand}" 
+                    Margin="2" 
+                    Padding="10,5"
+                    ToolTip="Delete selected"/>
 
-                <!-- Разделитель -->
-                <Rectangle Width="1" Fill="#C0C0C0" Margin="0,0,15,0"/>
+            <Separator/>
 
-                <!-- Группа 3 -->
-                <Button x:Name="BtnSelectMode" Content="Select" Width="80" Height="30" Margin="0,0,5,0"/>
-                <Button x:Name="BtnDragMode" Content="Drag" Width="80" Height="30"/>
-            </StackPanel>
-        </Border>
+            <Button Content="⭕ Circle" 
+                    Command="{Binding CircleLayoutCommand}" 
+                    Margin="2" 
+                    Padding="10,5"
+                    ToolTip="Apply circle layout"/>
+            <Button Content="🎲 Random" 
+                    Command="{Binding RandomLayoutCommand}" 
+                    Margin="2" 
+                    Padding="10,5"
+                    ToolTip="Apply random layout"/>
+            <Button Content="🌀 Force" 
+                    Command="{Binding ForceLayoutCommand}" 
+                    Margin="2" 
+                    Padding="10,5"
+                    ToolTip="Apply force layout"/>
+            <Button Content="🎨 Reset" 
+                    Command="{Binding ResetColorsCommand}" 
+                    Margin="2" 
+                    Padding="10,5"
+                    ToolTip="Reset colors"/>
+        </ToolBar>
 
-        <!-- Canvas -->
-        <ScrollViewer Grid.Row="2" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto">
-            <Canvas x:Name="GraphCanvas" Background="White" Focusable="True">
+        <!-- 3. ОСНОВНАЯ ОБЛАСТЬ -->
+        <ScrollViewer Grid.Row="1" 
+                      HorizontalScrollBarVisibility="Auto" 
+                      VerticalScrollBarVisibility="Auto"
+                      Background="White" Grid.ColumnSpan="2" Margin="0,19,0,0" Grid.RowSpan="2">
+            <Canvas x:Name="GraphCanvas" 
+                    Focusable="True">
+
+                <!-- Сетка на фоне - УБРАЛ Background="White" отсюда -->
+                <Canvas.Background>
+                    <DrawingBrush Viewport="0,0,20,20" 
+                                 ViewportUnits="Absolute" 
+                                 TileMode="Tile">
+                        <DrawingBrush.Drawing>
+                            <GeometryDrawing>
+                                <GeometryDrawing.Geometry>
+                                    <RectangleGeometry Rect="0,0,20,20"/>
+                                </GeometryDrawing.Geometry>
+                                <GeometryDrawing.Pen>
+                                    <Pen Brush="#FFEEEEEE" Thickness="0.5"/>
+                                </GeometryDrawing.Pen>
+                            </GeometryDrawing>
+                        </DrawingBrush.Drawing>
+                    </DrawingBrush>
+                </Canvas.Background>
+
+                <!-- Горячие клавиши -->
                 <Canvas.InputBindings>
-                    <KeyBinding Gesture="Ctrl+O"/>
-                    <KeyBinding Gesture="Ctrl+S"/>
-                    <KeyBinding x:Name="KeyBindingCircleLayout" Gesture="Ctrl+1"/>
-                    <KeyBinding x:Name="KeyBindingRandomLayout" Gesture="Ctrl+2"/>
-                    <KeyBinding x:Name="KeyBindingForceLayout" Gesture="Ctrl+3"/>
+                    <KeyBinding Gesture="Ctrl+O" Command="{Binding OpenCommand}"/>
+                    <KeyBinding Gesture="Ctrl+S" Command="{Binding SaveCommand}"/>
+                    <KeyBinding Key="Delete" Command="{Binding DeleteCommand}"/>
                 </Canvas.InputBindings>
-                <Canvas x:Name="TempCanvas" Visibility="Collapsed"/>
-                <Rectangle x:Name="SelectionRect" Stroke="Blue" StrokeThickness="1" Fill="LightBlue" Opacity="0.3" Visibility="Collapsed"/>
+
+                <!-- Элементы графа будут добавляться здесь -->
+
             </Canvas>
         </ScrollViewer>
 
-        <!-- Простой StatusBar -->
-        <StatusBar Grid.Row="2" VerticalAlignment="Bottom" Background="#F0F0F0" Height="25">
-            <TextBlock x:Name="StatusText" Text="Ready" Margin="10,0"/>
+        <!-- 4. СТАТУС БАР -->
+        <StatusBar Grid.Row="2" Background="#FFE0E0E0" Grid.ColumnSpan="2" Margin="0,589,0,0" Grid.RowSpan="2">
+            <!-- Статус -->
+            <StatusBarItem HorizontalAlignment="Left">
+                <StackPanel Orientation="Horizontal">
+                    <TextBlock Text="Status:" FontWeight="Bold" Margin="5,0,2,0"/>
+                    <TextBlock Text="{Binding StatusText}" 
+                               Foreground="DarkBlue"
+                               VerticalAlignment="Center"
+                               Width="300"/>
+                </StackPanel>
+            </StatusBarItem>
+
+            <!-- Разделитель -->
             <Separator/>
-            <TextBlock x:Name="VertexCountText" Text="Vertices: 0" Margin="10,0"/>
+
+            <!-- Алгоритм -->
+            <StatusBarItem>
+                <StackPanel Orientation="Horizontal">
+                    <TextBlock Text="Layout:" FontWeight="Bold" Margin="5,0,2,0"/>
+                    <TextBlock Text="{Binding LayoutStatus}" 
+                               Foreground="DarkGreen"
+                               VerticalAlignment="Center"
+                               Width="150"/>
+                </StackPanel>
+            </StatusBarItem>
+
+            <!-- Разделитель -->
             <Separator/>
-            <TextBlock x:Name="EdgeCountText" Text="Edges: 0" Margin="10,0"/>
-            <Separator/>
-            <TextBlock x:Name="LayoutStatusText" Text="Layout: None" Margin="10,0"/>
+
+            <!-- Счетчики -->
+            <StatusBarItem HorizontalAlignment="Right">
+                <StackPanel Orientation="Horizontal" Margin="5,0">
+                    <TextBlock Text="Vertices:" FontWeight="Bold" Margin="0,0,2,0"/>
+                    <TextBlock Text="{Binding VertexCount}" 
+                               Foreground="Blue" 
+                               FontWeight="Bold"
+                               Width="30"
+                               TextAlignment="Right"/>
+
+                    <TextBlock Text="  Edges:" FontWeight="Bold" Margin="10,0,2,0"/>
+                    <TextBlock Text="{Binding EdgeCount}" 
+                               Foreground="Red" 
+                               FontWeight="Bold"
+                               Width="30"
+                               TextAlignment="Right"/>
+                </StackPanel>
+            </StatusBarItem>
         </StatusBar>
     </Grid>
 </Window>
