@@ -1,15 +1,18 @@
-﻿using System;
+﻿using GraphEditor.Core;
+using GraphEditor.Core.Models;
+using GraphEditor.Serialization;
+using GraphEditor.Visual;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Text.Json;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Shapes;
-using GraphEditor.Core;
-using GraphEditor.Core.Models;
-using GraphEditor.Visual;
+using System.IO;
 
 namespace GraphEditor.Views
 {
@@ -1071,16 +1074,84 @@ namespace GraphEditor.Views
 
         private void OpenGraph()
         {
-            // Заглушка - будет реализовано позже
-            MessageBox.Show("Open graph - to be implemented", "Info",
-                MessageBoxButton.OK, MessageBoxImage.Information);
+            try
+            {
+                var openFileDialog = new Microsoft.Win32.OpenFileDialog
+                {
+                    Filter = "JSON files (*.json)|*.json|All files (*.*)|*.*",
+                    DefaultExt = ".json",
+                    Title = "Open Graph"
+                };
+
+                if (openFileDialog.ShowDialog() == true)
+                {
+                    var serializer = new GraphSerializer();
+                    var loadedGraph = serializer.LoadFromFile(openFileDialog.FileName);
+
+                    if (loadedGraph is GraphModel graphModel)
+                    {
+                        // Сбрасываем текущий граф
+                        _graphModel = graphModel;
+
+                        // Создаем новую визуальную модель
+                        var newVisualModel = new GraphVisualModel();
+                        newVisualModel.InitializeFromGraph(_graphModel);
+                        newVisualModel.VisualChanged += OnVisualChanged;
+
+                        // Отписываемся от старой визуальной модели
+                        if (_visualModel is GraphVisualModel oldVisual)
+                        {
+                            oldVisual.VisualChanged -= OnVisualChanged;
+                        }
+
+                        _visualModel = newVisualModel;
+
+                        // Сбрасываем состояние
+                        _selectedElements.Clear();
+                        _edgeStartVertexId = null;
+                        ClearTempEdge();
+                        SetMode(WorkMode.Select);
+
+                        // Отрисовываем новый граф
+                        DrawGraph();
+                        UpdateStatus();
+
+                        StatusText.Text = $"Graph loaded from {openFileDialog.FileName}";
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Error loading graph: {ex.Message}", "Error",
+                    MessageBoxButton.OK, MessageBoxImage.Error);
+            }
         }
 
         private void SaveGraph()
         {
-            // Заглушка - будет реализовано позже
-            MessageBox.Show("Save graph - to be implemented", "Info",
-                MessageBoxButton.OK, MessageBoxImage.Information);
+            try
+            {
+                var saveFileDialog = new Microsoft.Win32.SaveFileDialog
+                {
+                    Filter = "JSON files (*.json)|*.json|All files (*.*)|*.*",
+                    DefaultExt = ".json",
+                    Title = "Save Graph",
+                    AddExtension = true
+                };
+
+                if (saveFileDialog.ShowDialog() == true)
+                {
+                    var serializer = new GraphSerializer();
+                    serializer.SaveToFile(_graphModel, saveFileDialog.FileName);
+
+                    StatusText.Text = $"Graph saved to {saveFileDialog.FileName}";
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Error saving graph: {ex.Message}", "Error",
+                    MessageBoxButton.OK, MessageBoxImage.Error);
+            }
         }
     }
 
@@ -1148,4 +1219,113 @@ namespace GraphEditor.Views
             Loaded += (s, e) => textBox.Focus();
         }
     }
+    public class GraphSerializer
+    {
+        public string SerializeToJson(IGraphModel graph)
+        {
+            var data = new GraphData
+            {
+                IsDirected = graph.IsDirected,
+                AllowParallelEdges = graph.AllowParallelEdges,
+                AllowSelfLoops = graph.AllowSelfLoops,
+                Vertices = graph.Vertices.Values.Select(v => new VertexData
+                {
+                    Id = v.Id,
+                    Label = v.Label
+                }).ToList(),
+                Edges = graph.Edges.Values.Select(e => new EdgeData
+                {
+                    Id = e.Id,
+                    Source = e.Source,
+                    Target = e.Target,
+                    Weight = e.Weight,
+                    Capacity = e.Capacity
+                }).ToList()
+            };
+
+            return JsonSerializer.Serialize(data, new JsonSerializerOptions { WriteIndented = true });
+        }
+
+        public IGraphModel DeserializeFromJson(string json)
+        {
+            var data = JsonSerializer.Deserialize<GraphData>(json);
+            if (data == null)
+                throw new InvalidOperationException("Failed to deserialize graph");
+
+            var graph = new GraphModel(data.IsDirected, data.AllowParallelEdges, data.AllowSelfLoops);
+
+            foreach (var vertex in data.Vertices)
+            {
+                graph.AddVertex(vertex.Id, vertex.Label);
+            }
+
+            foreach (var edge in data.Edges)
+            {
+                graph.AddEdge(edge.Id, edge.Source, edge.Target, edge.Weight, edge.Capacity);
+            }
+
+            return graph;
+        }
+
+        public void SaveToFile(IGraphModel graph, string filePath)
+        {
+            var json = SerializeToJson(graph);
+            File.WriteAllText(filePath, json);
+        }
+
+        public IGraphModel LoadFromFile(string filePath)
+        {
+            if (!File.Exists(filePath))
+                throw new FileNotFoundException($"File not found: {filePath}");
+
+            var json = File.ReadAllText(filePath);
+            return DeserializeFromJson(json);
+        }
+
+        private class GraphData
+        {
+            public bool IsDirected { get; set; }
+            public bool AllowParallelEdges { get; set; }
+            public bool AllowSelfLoops { get; set; }
+            public List<VertexData> Vertices { get; set; } = new();
+            public List<EdgeData> Edges { get; set; } = new();
+        }
+
+        private class VertexData
+        {
+            public string Id { get; set; } = string.Empty;
+            public string? Label { get; set; }
+        }
+
+        private class EdgeData
+        {
+            public string Id { get; set; } = string.Empty;
+            public string Source { get; set; } = string.Empty;
+            public string Target { get; set; } = string.Empty;
+            public double? Weight { get; set; }
+            public double? Capacity { get; set; }
+        }
+    }
+    public class RelayCommand : ICommand
+    {
+        private readonly Action _execute;
+        private readonly Func<bool>? _canExecute;
+
+        public RelayCommand(Action execute, Func<bool>? canExecute = null)
+        {
+            _execute = execute ?? throw new ArgumentNullException(nameof(execute));
+            _canExecute = canExecute;
+        }
+
+        public bool CanExecute(object? parameter) => _canExecute?.Invoke() ?? true;
+
+        public void Execute(object? parameter) => _execute();
+
+        public event EventHandler? CanExecuteChanged
+        {
+            add => CommandManager.RequerySuggested += value;
+            remove => CommandManager.RequerySuggested -= value;
+        }
+    }
 }
+        
