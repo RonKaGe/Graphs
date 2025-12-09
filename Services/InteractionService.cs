@@ -40,12 +40,15 @@ namespace GraphEditor.Services
         public event Action SelectionCleared;
         public event Action VisualChanged;
         public event Action<string> DeleteRequested;
+        public event Action<string, Point> VertexRightClicked;    // vertexId, position
+        public event Action<string, Point> EdgeRightClicked;      // edgeId, position
 
         public InteractionService(Canvas canvas, IGraphModel graphModel, GraphVisualModel visualModel)
         {
             _canvas = canvas ?? throw new ArgumentNullException(nameof(canvas));
             _graphModel = graphModel ?? throw new ArgumentNullException(nameof(graphModel));
             _visualModel = visualModel ?? throw new ArgumentNullException(nameof(visualModel));
+
         }
 
         public void SetMode(WorkMode mode)
@@ -215,6 +218,15 @@ namespace GraphEditor.Services
             var elementId = FindElementAtPoint(position);
             if (!string.IsNullOrEmpty(elementId))
             {
+                if (_graphModel.Vertices.ContainsKey(elementId))
+                {
+                    VertexRightClicked?.Invoke(elementId, position);
+                }
+                else if (_graphModel.Edges.ContainsKey(elementId))
+                {
+                    EdgeRightClicked?.Invoke(elementId, position);
+                }
+
                 ElementSelected?.Invoke(elementId);
             }
         }

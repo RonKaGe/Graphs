@@ -16,6 +16,8 @@ namespace GraphEditor
         private readonly CommandService _commandService;
         private readonly ObservableGraphModel _graphModel;
         private readonly GraphVisualModel _visualModel;
+        private readonly ContextMenuService _contextMenuService; // ДОБАВЛЕНО
+
 
         public MainWindow()
         {
@@ -32,6 +34,7 @@ namespace GraphEditor
             // Создаём сервисы
             _commandService = new CommandService(_graphModel, _visualModel);
             _interactionService = new InteractionService(GraphCanvas, _graphModel, _visualModel);
+            _contextMenuService = new ContextMenuService(_commandService, _graphModel); // ДОБАВЛЕНО
 
             // Настройка событий
             SetupEventHandlers();
@@ -66,6 +69,10 @@ namespace GraphEditor
             _interactionService.SelectionCleared += OnSelectionCleared;
             _interactionService.VisualChanged += OnVisualChanged;
             _interactionService.DeleteRequested += OnDeleteRequested;
+
+            // ДОБАВЛЕНО: Подписка на события правого клика
+            _interactionService.VertexRightClicked += OnVertexRightClicked;
+            _interactionService.EdgeRightClicked += OnEdgeRightClicked;
 
             // === Подписка на события CommandService ===
             _commandService.OperationCompleted += OnOperationCompleted;
@@ -189,6 +196,17 @@ namespace GraphEditor
                     _commandService.RemoveEdge(elementId);
                 }
             }
+        }
+
+        // ДОБАВЛЕНО: Обработчики правого клика
+        private void OnVertexRightClicked(string vertexId, Point position)
+        {
+            _contextMenuService.ShowVertexContextMenu(vertexId, position);
+        }
+
+        private void OnEdgeRightClicked(string edgeId, Point position)
+        {
+            _contextMenuService.ShowEdgeContextMenu(edgeId, position);
         }
 
         private void OnOperationCompleted(string message)
