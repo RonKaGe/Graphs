@@ -30,6 +30,7 @@ namespace GraphEditor.Services
 
         // Для выделения
         private string _selectedElementId;
+        public string SelectedElementId => _selectedElementId;
 
         // События
         public event Action<string> StatusChanged;

@@ -323,9 +323,19 @@ namespace GraphEditor
 
         private void DeleteSelected()
         {
-            // В реальном приложении нужно получить выделенный элемент
-            MessageBox.Show("Please select an element first, then press Delete", "Info",
-                MessageBoxButton.OK, MessageBoxImage.Information);
+            // Получаем выделенный элемент из InteractionService
+            var selectedId = _interactionService.SelectedElementId;
+
+            if (!string.IsNullOrEmpty(selectedId))
+            {
+                // Используем уже существующий обработчик OnDeleteRequested
+                OnDeleteRequested(selectedId);
+            }
+            else
+            {
+                MessageBox.Show("Please select an element first", "Info",
+                    MessageBoxButton.OK, MessageBoxImage.Information);
+            }
         }
 
         private void SelectAll()

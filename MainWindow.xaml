@@ -11,71 +11,181 @@
 
     <Window.Resources>
         <Style TargetType="Button">
-            <Setter Property="Margin" Value="2"/>
-            <Setter Property="Padding" Value="5,2"/>
-            <Setter Property="MinWidth" Value="80"/>
+            <Setter Property="Margin" Value="3,2"/>
+            <Setter Property="Padding" Value="10,5"/>
+            <Setter Property="MinWidth" Value="90"/>
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="Background" Value="#F0F8FF"/>
+            <Setter Property="BorderBrush" Value="#A9A9A9"/>
+            <Setter Property="BorderThickness" Value="1"/>
         </Style>
 
         <Style TargetType="Menu">
-            <Setter Property="Background" Value="#F0F0F0"/>
+            <Setter Property="Background" Value="#2F4F4F"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="FontSize" Value="13"/>
+            <Setter Property="Height" Value="28"/>
+        </Style>
+
+        <Style TargetType="MenuItem">
+            <Setter Property="Padding" Value="12,4"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="FontSize" Value="12"/>
+        </Style>
+
+        <Style TargetType="Separator">
+            <Setter Property="Background" Value="#708090"/>
+            <Setter Property="Margin" Value="5,2"/>
+            <Setter Property="Height" Value="1"/>
+        </Style>
+
+        <Style x:Key="ToolbarButton" TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
+            <Setter Property="Background" Value="#E6F3FF"/>
+            <Setter Property="BorderBrush" Value="#87CEEB"/>
+            <Setter Property="Margin" Value="4,2"/>
+            <Setter Property="Padding" Value="8,4"/>
+            <Setter Property="MinWidth" Value="85"/>
+        </Style>
+
+        <Style x:Key="ModeButton" TargetType="Button" BasedOn="{StaticResource ToolbarButton}">
+            <Setter Property="Background" Value="#F5F5DC"/>
+            <Setter Property="BorderBrush" Value="#DAA520"/>
+        </Style>
+
+        <Style x:Key="ActionButton" TargetType="Button" BasedOn="{StaticResource ToolbarButton}">
+            <Setter Property="Background" Value="#F0FFF0"/>
+            <Setter Property="BorderBrush" Value="#90EE90"/>
+        </Style>
+
+        <Style x:Key="LayoutButton" TargetType="Button" BasedOn="{StaticResource ToolbarButton}">
+            <Setter Property="Background" Value="#FFF0F5"/>
+            <Setter Property="BorderBrush" Value="#DB7093"/>
+        </Style>
+
+        <Style x:Key="UtilityButton" TargetType="Button" BasedOn="{StaticResource ToolbarButton}">
+            <Setter Property="Background" Value="#FFFFE0"/>
+            <Setter Property="BorderBrush" Value="#FFD700"/>
+        </Style>
+
+        <!-- Стиль для фиксированных панелей -->
+        <Style x:Key="FixedToolBar" TargetType="ToolBar">
+            <Setter Property="IsEnabled" Value="True"/>
+            <Setter Property="IsManipulationEnabled" Value="False"/>
+            <Setter Property="Focusable" Value="False"/>
         </Style>
     </Window.Resources>
 
     <DockPanel>
-        <!-- Меню -->
+        <!-- Меню (тёмное для контраста) -->
         <Menu DockPanel.Dock="Top">
-            <MenuItem Header="File">
-                <MenuItem Header="Open..." Name="MenuItemFileOpen"/>
-                <MenuItem Header="Save" Name="MenuItemFileSave"/>
+            <MenuItem Header="📁 File" Background="#3A5F5F">
+                <MenuItem Header="📂 Open..." Name="MenuItemFileOpen"/>
+                <MenuItem Header="💾 Save" Name="MenuItemFileSave"/>
                 <Separator/>
-                <MenuItem Header="Exit" Name="MenuItemFileExit"/>
+                <MenuItem Header="❌ Exit" Name="MenuItemFileExit"/>
             </MenuItem>
 
-            <MenuItem Header="Edit">
-                <MenuItem Header="Select All" Name="MenuItemEditSelectAll"/>
-                <MenuItem Header="Clear Selection" Name="MenuItemEditClearSelection"/>
+            <MenuItem Header="✏️ Edit" Background="#3A5F5F">
+                <MenuItem Header="📋 Select All" Name="MenuItemEditSelectAll"/>
+                <MenuItem Header="🧹 Clear Selection" Name="MenuItemEditClearSelection"/>
             </MenuItem>
 
-            <MenuItem Header="View">
-                <MenuItem Header="Reset Colors" Name="MenuItemViewResetColors"/>
+            <MenuItem Header="🎨 View" Background="#3A5F5F">
+                <MenuItem Header="🔄 Reset Colors" Name="MenuItemViewResetColors"/>
             </MenuItem>
 
-            <MenuItem Header="Layout">
-                <MenuItem Header="Circle Layout" Name="MenuItemLayoutCircle"/>
-                <MenuItem Header="Random Layout" Name="MenuItemLayoutRandom"/>
+            <MenuItem Header="📐 Layout" Background="#3A5F5F">
+                <MenuItem Header="⭕ Circle Layout" Name="MenuItemLayoutCircle"/>
+                <MenuItem Header="🎲 Random Layout" Name="MenuItemLayoutRandom"/>
             </MenuItem>
 
-            <MenuItem Header="Help">
-                <MenuItem Header="About" Name="MenuItemHelpAbout"/>
+            <MenuItem Header="⚙️ Algorithms" Background="#3A5F5F">
+                <MenuItem Header="➡️ Dijkstra" Name="MenuItemAlgoDijkstra"/>
+                <MenuItem Header="🌳 MST (Prim)" Name="MenuItemAlgoMST"/>
+                <MenuItem Header="💧 Max Flow" Name="MenuItemAlgoMaxFlow"/>
+            </MenuItem>
+
+            <MenuItem Header="❓ Help" Background="#3A5F5F">
+                <MenuItem Header="ℹ️ About" Name="MenuItemHelpAbout"/>
             </MenuItem>
         </Menu>
 
-        <!-- Панель инструментов -->
-        <ToolBarTray DockPanel.Dock="Top" Background="#E0E0E0">
-            <ToolBar>
-                <!-- Режимы работы -->
-                <Button Name="BtnSelectMode" ToolTip="Select Mode" Content="Select"/>
-                <Button Name="BtnDragMode" ToolTip="Drag Mode" Content="Drag"/>
+        <!-- ФИКСИРОВАННАЯ панель инструментов (без возможности перемещения) -->
+        <Grid DockPanel.Dock="Top" Background="#F5F5F5" Height="50">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
 
-                <Separator/>
+            <!-- Группа 1: Режимы работы - ФИКСИРОВАНА -->
+            <Border Grid.Column="0" Background="#FFF8DC" Margin="5,3" Padding="5" 
+                    BorderBrush="#DAA520" BorderThickness="1" CornerRadius="3">
+                <StackPanel Orientation="Horizontal">
+                    <Label Content="Modes:" FontWeight="Bold" Foreground="#8B4513" 
+                           Margin="0,0,10,0" VerticalAlignment="Center"/>
+                    <Button Name="BtnSelectMode" Style="{StaticResource ModeButton}" 
+                            Content="🖱️ Select" ToolTip="Select Mode (Click elements)"
+                            VerticalAlignment="Center"/>
+                    <Button Name="BtnDragMode" Style="{StaticResource ModeButton}" 
+                            Content="👆 Drag" ToolTip="Drag Mode (Move vertices)"
+                            VerticalAlignment="Center" Margin="5,0,0,0"/>
+                </StackPanel>
+            </Border>
 
-                <!-- Добавление элементов -->
-                <Button Name="BtnAddVertex" ToolTip="Add Vertex" Content="Add Vertex"/>
-                <Button Name="BtnAddEdge" ToolTip="Add Edge" Content="Add Edge"/>
+            <!-- Группа 2: Добавление элементов - ФИКСИРОВАНА -->
+            <Border Grid.Column="1" Background="#F0FFF0" Margin="5,3" Padding="5"
+                    BorderBrush="#90EE90" BorderThickness="1" CornerRadius="3">
+                <StackPanel Orientation="Horizontal">
+                    <Label Content="Add:" FontWeight="Bold" Foreground="#228B22" 
+                           Margin="0,0,10,0" VerticalAlignment="Center"/>
+                    <Button Name="BtnAddVertex" Style="{StaticResource ActionButton}" 
+                            Content="🟊 Add Vertex" ToolTip="Add Vertex (Click on canvas)"
+                            VerticalAlignment="Center"/>
+                    <Button Name="BtnAddEdge" Style="{StaticResource ActionButton}" 
+                            Content="➖ Add Edge" ToolTip="Add Edge (Click two vertices)"
+                            VerticalAlignment="Center" Margin="5,0,0,0"/>
+                </StackPanel>
+            </Border>
 
-                <Separator/>
+            <!-- Группа 3: Layout алгоритмы - ФИКСИРОВАНА -->
+            <Border Grid.Column="2" Background="#F5F0FF" Margin="5,3" Padding="5"
+                    BorderBrush="#DB7093" BorderThickness="1" CornerRadius="3">
+                <StackPanel Orientation="Horizontal">
+                    <Label Content="Layout:" FontWeight="Bold" Foreground="#4B0082" 
+                           Margin="0,0,10,0" VerticalAlignment="Center"/>
+                    <Button Name="BtnCircleLayout" Style="{StaticResource LayoutButton}" 
+                            Content="⭕ Circle" ToolTip="Apply Circle Layout"
+                            VerticalAlignment="Center"/>
+                    <Button Name="BtnRandomLayout" Style="{StaticResource LayoutButton}" 
+                            Content="🎲 Random" ToolTip="Apply Random Layout"
+                            VerticalAlignment="Center" Margin="5,0,0,0"/>
+                </StackPanel>
+            </Border>
 
-                <!-- Layout алгоритмы -->
-                <Button Name="BtnCircleLayout" ToolTip="Circle Layout" Content="Circle"/>
-                <Button Name="BtnRandomLayout" ToolTip="Random Layout" Content="Random"/>
+            <!-- Группа 4: Утилиты - ФИКСИРОВАНА -->
+            <Border Grid.Column="3" Background="#FFF0F5" Margin="5,3" Padding="5"
+                    BorderBrush="#FFD700" BorderThickness="1" CornerRadius="3">
+                <StackPanel Orientation="Horizontal">
+                    <Label Content="Tools:" FontWeight="Bold" Foreground="#C71585" 
+                           Margin="0,0,10,0" VerticalAlignment="Center"/>
+                    <Button Name="BtnResetColors" Style="{StaticResource UtilityButton}" 
+                            Content="🎨 Reset Colors" ToolTip="Reset all colors to default"
+                            VerticalAlignment="Center"/>
+                    <Button Name="BtnDelete" Style="{StaticResource UtilityButton}" 
+                            Content="🗑️ Delete" ToolTip="Delete selected element (or press Delete key)"
+                            VerticalAlignment="Center" Margin="5,0,0,0"/>
+                </StackPanel>
+            </Border>
 
-                <Separator/>
-
-                <!-- Действия -->
-                <Button Name="BtnResetColors" ToolTip="Reset Colors" Content="Reset Colors"/>
-                <Button Name="BtnDelete" ToolTip="Delete Selected" Content="Delete"/>
-            </ToolBar>
-        </ToolBarTray>
+            <!-- Пустое пространство справа -->
+            <Border Grid.Column="4" Background="Transparent">
+                <TextBlock Text="Graph Editor" VerticalAlignment="Center" HorizontalAlignment="Right"
+                          Margin="0,0,20,0" FontStyle="Italic" Foreground="#708090"/>
+            </Border>
+        </Grid>
 
         <!-- Основная область -->
         <Grid>
@@ -84,42 +194,62 @@
                 <RowDefinition Height="Auto"/>
             </Grid.RowDefinitions>
 
-            <!-- Canvas для отрисовки графа -->
-            <Border Grid.Row="0" BorderBrush="Gray" BorderThickness="1" Margin="5" Background="White">
+            <!-- Canvas для отрисовки графа с рамкой -->
+            <Border Grid.Row="0" BorderBrush="#C0C0C0" BorderThickness="2" Margin="8" Background="White"
+                    CornerRadius="3">
                 <Canvas Name="GraphCanvas" 
-                        Background="White"
+                        Background="#FAFAFA"
                         Focusable="True"
                         FocusVisualStyle="{x:Null}">
                     <!-- Граф будет отрисован здесь -->
                 </Canvas>
             </Border>
 
-            <!-- Строка состояния -->
-            <StatusBar Grid.Row="1" Background="#F0F0F0">
+            <!-- Улучшенная строка состояния -->
+            <StatusBar Grid.Row="1" Background="#2F4F4F" Foreground="White" Height="28">
+                <!-- Статус -->
                 <StatusBarItem>
-                    <TextBlock Name="StatusText" Text="Ready" Margin="5,0"/>
+                    <Border Background="#3A5F5F" CornerRadius="3" Padding="6,2" Margin="2">
+                        <TextBlock Name="StatusText" Text="✅ Ready" FontWeight="SemiBold"/>
+                    </Border>
                 </StatusBarItem>
 
-                <Separator/>
+                <Separator Background="#708090" Width="1" Margin="5,0"/>
 
+                <!-- Статистика -->
                 <StatusBarItem>
-                    <TextBlock Name="VertexCountText" Text="Vertices: 0" Margin="5,0"/>
+                    <Border Background="#4682B4" CornerRadius="3" Padding="6,2" Margin="2">
+                        <TextBlock Name="VertexCountText" Text="📌 Vertices: 0" FontWeight="Medium"/>
+                    </Border>
                 </StatusBarItem>
 
                 <StatusBarItem>
-                    <TextBlock Name="EdgeCountText" Text="Edges: 0" Margin="5,0"/>
+                    <Border Background="#4682B4" CornerRadius="3" Padding="6,2" Margin="2">
+                        <TextBlock Name="EdgeCountText" Text="➖ Edges: 0" FontWeight="Medium"/>
+                    </Border>
                 </StatusBarItem>
 
-                <Separator/>
+                <Separator Background="#708090" Width="1" Margin="5,0"/>
 
+                <!-- Layout статус -->
                 <StatusBarItem>
-                    <TextBlock Name="LayoutStatusText" Text="Layout: None" Margin="5,0"/>
+                    <Border Background="#5F9EA0" CornerRadius="3" Padding="6,2" Margin="2">
+                        <TextBlock Name="LayoutStatusText" Text="📐 Layout: None" FontWeight="Medium"/>
+                    </Border>
                 </StatusBarItem>
 
-                <Separator/>
+                <Separator Background="#708090" Width="1" Margin="5,0"/>
 
+                <!-- Режим работы -->
                 <StatusBarItem>
-                    <TextBlock Name="ModeText" Text="Mode: Select" Margin="5,0"/>
+                    <Border Background="#D2691E" CornerRadius="3" Padding="6,2" Margin="2">
+                        <TextBlock Name="ModeText" Text="🎯 Mode: Select" FontWeight="Medium"/>
+                    </Border>
+                </StatusBarItem>
+
+                <!-- Пустое пространство справа -->
+                <StatusBarItem HorizontalAlignment="Right">
+                    <TextBlock Text="Graph Editor v1.0" Opacity="0.7" Margin="10,0" FontSize="11"/>
                 </StatusBarItem>
             </StatusBar>
         </Grid>
