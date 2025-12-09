@@ -14,8 +14,17 @@ namespace GraphEditor.Core.Models
         private ObservableCollection<IVertex> _observableVertices;
         private ObservableCollection<IEdge> _observableEdges;
 
-        public new ObservableCollection<IVertex> Vertices => _observableVertices;
-        public new ObservableCollection<IEdge> Edges => _observableEdges;
+        // Новые свойства для ObservableCollections
+        public new ObservableCollection<IVertex> ObservableVertices => _observableVertices;
+        public new ObservableCollection<IEdge> ObservableEdges => _observableEdges;
+
+        // Сохраняем доступ к базовым словарям
+        public new IReadOnlyDictionary<string, IVertex> Vertices => base.Vertices;
+        public new IReadOnlyDictionary<string, IEdge> Edges => base.Edges;
+
+        // Методы для проверки существования (аналоги ContainsKey)
+        public bool ContainsVertex(string id) => base.Vertices.ContainsKey(id);
+        public bool ContainsEdge(string id) => base.Edges.ContainsKey(id);
 
         public ObservableGraphModel(bool isDirected = false, bool allowParallelEdges = true, bool allowSelfLoops = true)
             : base(isDirected, allowParallelEdges, allowSelfLoops)
@@ -30,6 +39,8 @@ namespace GraphEditor.Core.Models
         private void OnGraphChanged(object? sender, EventArgs e)
         {
             UpdateObservableCollections();
+            OnPropertyChanged(nameof(ObservableVertices));
+            OnPropertyChanged(nameof(ObservableEdges));
             OnPropertyChanged(nameof(Vertices));
             OnPropertyChanged(nameof(Edges));
         }
@@ -80,42 +91,70 @@ namespace GraphEditor.Core.Models
         public override bool AddVertex(string id, string? label = null)
         {
             var result = base.AddVertex(id, label);
+            if (result)
+            {
+                OnPropertyChanged(nameof(Vertices));
+            }
             return result;
         }
 
         public override bool RemoveVertex(string id)
         {
             var result = base.RemoveVertex(id);
+            if (result)
+            {
+                OnPropertyChanged(nameof(Vertices));
+            }
             return result;
         }
 
         public override bool AddEdge(string id, string source, string target, double? weight = null, double? capacity = null)
         {
             var result = base.AddEdge(id, source, target, weight, capacity);
+            if (result)
+            {
+                OnPropertyChanged(nameof(Edges));
+            }
             return result;
         }
 
         public override bool RemoveEdge(string id)
         {
             var result = base.RemoveEdge(id);
+            if (result)
+            {
+                OnPropertyChanged(nameof(Edges));
+            }
             return result;
         }
 
         public override bool SetVertexLabel(string id, string? label)
         {
             var result = base.SetVertexLabel(id, label);
+            if (result)
+            {
+                OnPropertyChanged(nameof(Vertices));
+            }
             return result;
         }
 
         public override bool SetEdgeWeight(string id, double? weight)
         {
             var result = base.SetEdgeWeight(id, weight);
+            if (result)
+            {
+                OnPropertyChanged(nameof(Edges));
+            }
             return result;
         }
 
         public override bool SetEdgeCapacity(string id, double? capacity)
         {
             var result = base.SetEdgeCapacity(id, capacity);
+            if (result)
+            {
+                OnPropertyChanged(nameof(Edges));
+            }
             return result;
         }
     }
