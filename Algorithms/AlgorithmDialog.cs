@@ -1,6 +1,7 @@
 ﻿using GraphEditor.Algorithms;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.Eventing.Reader;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
@@ -16,6 +17,7 @@ namespace GraphEditor.Views
         private TextBlock _txtDescription;
         private StackPanel _parametersPanel;
         private Dictionary<string, Control> _parameterControls;
+        private GroupBox _parametersGroup;
 
         public AlgorithmInfo SelectedAlgorithm { get; private set; }
         public Dictionary<string, string> Parameters { get; private set; }
@@ -34,7 +36,7 @@ namespace GraphEditor.Views
 
         private void InitializeComponent()
         {
-            Title = "Run Algorithm";
+            Title = "Запустить алгоритм";
             Width = 500;
             Height = 400;
             WindowStartupLocation = WindowStartupLocation.CenterOwner;
@@ -48,7 +50,7 @@ namespace GraphEditor.Views
             // Заголовок
             var titleText = new TextBlock
             {
-                Text = "Select Algorithm and Parameters",
+                Text = "Выберите алгоритм и параметры",
                 FontSize = 16,
                 FontWeight = FontWeights.Bold,
                 Margin = new Thickness(0, 0, 0, 10)
@@ -57,19 +59,25 @@ namespace GraphEditor.Views
             mainGrid.Children.Add(titleText);
 
             // Основное содержимое
-            var scrollViewer = new ScrollViewer { VerticalScrollBarVisibility = ScrollBarVisibility.Auto };
+            var scrollViewer = new ScrollViewer
+            {
+                VerticalScrollBarVisibility = ScrollBarVisibility.Auto,
+                Margin = new Thickness(0, 5, 0, 5)
+            };
             var contentPanel = new StackPanel();
 
             // Выбор алгоритма
             var algorithmGroup = new GroupBox
             {
-                Header = "Algorithm",
-                Margin = new Thickness(0, 0, 0, 10)
+                Header = "Алгоритм",
+                Margin = new Thickness(0, 0, 0, 10),
+                Padding = new Thickness(5)
             };
             _comboAlgorithms = new ComboBox
             {
-                DisplayMemberPath = "Name",
-                MinHeight = 30
+                DisplayMemberPath = "Name",  // ИСПРАВЛЕНО: должно быть "Name", а не "Имя"
+                MinHeight = 30,
+                Margin = new Thickness(2)
             };
             _comboAlgorithms.SelectionChanged += ComboAlgorithms_SelectionChanged;
             algorithmGroup.Content = _comboAlgorithms;
@@ -78,63 +86,68 @@ namespace GraphEditor.Views
             // Описание
             var descriptionGroup = new GroupBox
             {
-                Header = "Description",
-                Margin = new Thickness(0, 0, 0, 10)
+                Header = "Описание",
+                Margin = new Thickness(0, 0, 0, 10),
+                Padding = new Thickness(5)
             };
             _txtDescription = new TextBlock
             {
                 TextWrapping = TextWrapping.Wrap,
-                MinHeight = 40,
-                Margin = new Thickness(5)
+                MinHeight = 60,
+                Margin = new Thickness(2),
+                Text = "Выберите алгоритм из списка выше"
             };
             descriptionGroup.Content = _txtDescription;
             contentPanel.Children.Add(descriptionGroup);
 
             // Параметры
-            var parametersGroup = new GroupBox
+            _parametersGroup = new GroupBox  // ИСПРАВЛЕНО: используем поле
             {
-                Header = "Parameters",
-                Name = "GroupParameters",
+                Header = "Параметры",
                 Margin = new Thickness(0, 0, 0, 10),
+                Padding = new Thickness(5),
                 Visibility = Visibility.Collapsed
             };
             _parametersPanel = new StackPanel();
-            parametersGroup.Content = _parametersPanel;
-            contentPanel.Children.Add(parametersGroup);
+            _parametersGroup.Content = _parametersPanel;
+            contentPanel.Children.Add(_parametersGroup);
 
             scrollViewer.Content = contentPanel;
             Grid.SetRow(scrollViewer, 1);
             mainGrid.Children.Add(scrollViewer);
 
             // Кнопки
-            var buttonPanel = new StackPanel
+            var buttonPanel = new DockPanel
             {
-                Orientation = Orientation.Horizontal,
-                HorizontalAlignment = HorizontalAlignment.Right,
-                Margin = new Thickness(0, 10, 0, 0)
+                LastChildFill = false,
+                Margin = new Thickness(0, 10, 0, 0),
+                Height = 40
             };
 
             var runButton = new Button
             {
-                Content = "Run",
+                Content = "Запустить",  // ИСПРАВЛЕНО: русский текст
                 IsDefault = true,
-                Width = 80,
-                Margin = new Thickness(5),
-                Padding = new Thickness(10, 5, 10, 5)
+                Width = 100,
+                Height = 30,
+                Margin = new Thickness(5)
             };
             runButton.Click += BtnRun_Click;
+            DockPanel.SetDock(runButton, Dock.Right);
 
             var cancelButton = new Button
             {
-                Content = "Cancel",
+                Content = "Отмена",  // ИСПРАВЛЕНО: русский текст
                 IsCancel = true,
-                Width = 80,
-                Margin = new Thickness(5),
-                Padding = new Thickness(10, 5, 10, 5)
+                Width = 100,
+                Height = 30,
+                Margin = new Thickness(5)
             };
+            DockPanel.SetDock(cancelButton, Dock.Right);
 
-            buttonPanel.Children.Add(runButton);
             buttonPanel.Children.Add(cancelButton);
+            buttonPanel.Children.Add(runButton);
+
             Grid.SetRow(buttonPanel, 2);
             mainGrid.Children.Add(buttonPanel);
 
@@ -164,12 +177,16 @@ namespace GraphEditor.Views
                 _parameterControls.Clear();
                 Parameters.Clear();
 
+                // НАХОДИМ GroupBox по Header (один раз и сохраняем в переменную)
+                var parametersGroupBox = (Content as Grid)?.Children
+                    .OfType<GroupBox>()
+                    .FirstOrDefault(g => g.Header?.ToString() == "Параметры");
+
                 if (algorithm.RequiresParameters && algorithm.Parameters != null)
                 {
-                    (Content as Grid).Children
-                        .OfType<GroupBox>()
-                        .First(g => g.Name == "GroupParameters")
-                        .Visibility = Visibility.Visible;
+                    //  используем найденный GroupBox
+                    if (parametersGroupBox != null)
+                        parametersGroupBox.Visibility = Visibility.Visible;
 
                     foreach (var param in algorithm.Parameters)
                     {
@@ -218,10 +235,9 @@ namespace GraphEditor.Views
                 }
                 else
                 {
-                    (Content as Grid).Children
-                        .OfType<GroupBox>()
-                        .First(g => g.Name == "GroupParameters")
-                        .Visibility = Visibility.Collapsed;
+                    //  скрываем найденный GroupBox
+                    if (parametersGroupBox != null)
+                        parametersGroupBox.Visibility = Visibility.Collapsed;
                 }
             }
         }
@@ -253,8 +269,8 @@ namespace GraphEditor.Views
                     if (param.IsRequired &&
                         (!Parameters.ContainsKey(param.Name) || string.IsNullOrEmpty(Parameters[param.Name])))
                     {
-                        MessageBox.Show($"Parameter '{param.Name}' is required",
-                            "Validation Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                        MessageBox.Show($"Параметр '{param.Name}' требуется",
+                            "Ошибка проверки", MessageBoxButton.OK, MessageBoxImage.Error);
                         return;
                     }
                 }

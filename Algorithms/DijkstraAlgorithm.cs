@@ -41,19 +41,23 @@ namespace GraphEditor.Algorithms
                     }
                 }
 
-                // 3. Выполнение алгоритма
-                var distances = CalculateShortestPaths(graph, startVertexId);
+                // 3. Выполнение алгоритма с сохранением предков
+                var (distances, previous) = CalculateShortestPathsWithPrevious(graph, startVertexId);
 
-                // 4. Формирование результата
+                // 4. Сохраняем данные в результат
                 result.Success = true;
                 result.Data["distances"] = distances;
+                result.Data["previous"] = previous;
+                result.Data["startVertex"] = startVertexId;  // ДОБАВЛЕНО!
 
                 if (endVertexId != null)
                 {
+                    result.Data["endVertex"] = endVertexId;  // ДОБАВЛЕНО!
+
                     if (distances.ContainsKey(endVertexId) && distances[endVertexId] < double.PositiveInfinity)
                     {
-                        // Находим путь
-                        var path = FindShortestPath(graph, startVertexId, endVertexId, distances);
+                        // Находим путь используя информацию о предках
+                        var path = ReconstructPath(previous, startVertexId, endVertexId);
                         if (path != null)
                         {
                             result.Data["path"] = path;
@@ -85,16 +89,26 @@ namespace GraphEditor.Algorithms
             return result;
         }
 
-        private Dictionary<string, double> CalculateShortestPaths(IGraphModel graph, string start)
+        private (Dictionary<string, double> distances, Dictionary<string, string> previous)
+            CalculateShortestPathsWithPrevious(IGraphModel graph, string start)
         {
             var distances = new Dictionary<string, double>();
+            var previous = new Dictionary<string, string>();
             var visited = new HashSet<string>();
-            var priorityQueue = new SortedSet<(double distance, string vertexId)>();
+
+            // Используем SortedSet как приоритетную очередь
+            var priorityQueue = new SortedSet<(double distance, string vertexId)>(
+                Comparer<(double distance, string vertexId)>.Create((a, b) =>
+                {
+                    int distCompare = a.distance.CompareTo(b.distance);
+                    return distCompare != 0 ? distCompare : a.vertexId.CompareTo(b.vertexId);
+                }));
 
             // Инициализация
             foreach (var vertexId in graph.Vertices.Keys)
             {
                 distances[vertexId] = double.PositiveInfinity;
+                previous[vertexId] = null;
             }
 
             distances[start] = 0;
@@ -127,54 +141,40 @@ namespace GraphEditor.Algorithms
 
                     if (newDist < distances[neighborId])
                     {
+                        // Удаляем старую запись из очереди, если она существует
+                        priorityQueue.Remove((distances[neighborId], neighborId));
+
                         distances[neighborId] = newDist;
+                        previous[neighborId] = currentVertex;
                         priorityQueue.Add((newDist, neighborId));
                     }
                 }
             }
 
-            return distances;
+            return (distances, previous);
         }
 
-        private List<string> FindShortestPath(IGraphModel graph, string start, string end, Dictionary<string, double> distances)
+        private List<string> ReconstructPath(Dictionary<string, string> previous, string start, string end)
         {
-            if (distances[end] >= double.PositiveInfinity)
+            var path = new List<string>();
+
+            if (!previous.ContainsKey(end) || previous[end] == null)
                 return null;
 
-            var path = new List<string> { end };
             string current = end;
 
-            while (current != start)
+            while (current != null && current != start)
             {
-                string prev = null;
-                double minDist = double.PositiveInfinity;
-
-                // Ищем предыдущую вершину на кратчайшем пути
-                foreach (var neighborId in graph.GetNeighbors(current))
-                {
-                    var edge = FindEdgeBetween(graph, neighborId, current);
-                    if (edge == null) continue;
-
-                    double edgeWeight = edge.Weight ?? 1.0;
-                    double neighborDist = distances[neighborId];
-
-                    if (Math.Abs(distances[current] - (neighborDist + edgeWeight)) < 0.0001)
-                    {
-                        if (neighborDist < minDist)
-                        {
-                            minDist = neighborDist;
-                            prev = neighborId;
-                        }
-                    }
-                }
-
-                if (prev == null)
+                path.Insert(0, current);
+                if (!previous.ContainsKey(current))
                     return null;
-
-                path.Insert(0, prev);
-                current = prev;
+                current = previous[current];
             }
 
+            if (current == null)
+                return null;
+
+            path.Insert(0, start);
             return path;
         }
 
@@ -232,7 +232,7 @@ namespace GraphEditor.Algorithms
                         {
                             if (vertexId != startVertex && vertexId != endVertex)
                             {
-                                visualModel.SetVertexColor(vertexId, Colors.Red);
+                                visualModel.SetVertexColor(vertexId, Colors.Orange);
                             }
                         }
 
@@ -242,6 +242,20 @@ namespace GraphEditor.Algorithms
                             foreach (var edgeId in edges)
                             {
                                 visualModel.SetEdgeColor(edgeId, Colors.Red);
+                            }
+                        }
+                    }
+                }
+                else
+                {
+                    // Если конечная вершина не указана, просто показываем все достижимые вершины
+                    if (result.Data.TryGetValue("distances", out object distObj) && distObj is Dictionary<string, double> distances)
+                    {
+                        foreach (var kvp in distances)
+                        {
+                            if (kvp.Key != startVertex && kvp.Value < double.PositiveInfinity)
+                            {
+                                visualModel.SetVertexColor(kvp.Key, Colors.LightGreen);
                             }
                         }
                     }

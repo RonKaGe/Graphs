@@ -63,11 +63,15 @@ namespace GraphEditor
             _graphModel.AddVertex("D", "Vertex D");
             _graphModel.AddVertex("E", "Vertex E");
 
-            _graphModel.AddEdge("AB", "A", "B", 5.0);
-            _graphModel.AddEdge("BC", "B", "C", 3.0);
-            _graphModel.AddEdge("CD", "C", "D", 7.0);
-            _graphModel.AddEdge("DE", "D", "E", 2.0);
-            _graphModel.AddEdge("EA", "E", "A", 4.0);
+            _graphModel.AddEdge("AB", "A", "B", 5.0, 10.0); // weight=5, capacity=10
+            _graphModel.AddEdge("BC", "B", "C", 3.0, 8.0);
+            _graphModel.AddEdge("CD", "C", "D", 7.0, 15.0);
+            _graphModel.AddEdge("DE", "D", "E", 2.0, 5.0);
+            _graphModel.AddEdge("EA", "E", "A", 4.0, 12.0);
+
+            // Добавим ещё рёбра для лучшего тестирования
+            _graphModel.AddEdge("AC", "A", "C", 6.0, 7.0);
+            _graphModel.AddEdge("BD", "B", "D", 4.0, 9.0);
         }
 
         private void ShowAlgorithmDialog()
@@ -157,6 +161,8 @@ namespace GraphEditor
 
         private void RunSpecificAlgorithm(string algorithmId)
         {
+            Console.WriteLine($"Запуск алгоритма: {algorithmId}");
+
             var parameters = new Dictionary<string, string>();
 
             switch (algorithmId)
@@ -172,6 +178,7 @@ namespace GraphEditor
             }
 
             var result = _algorithmService.RunAlgorithm(algorithmId, parameters);
+            Console.WriteLine($"Результат: Success={result.Success}, Message={result.Message}");
 
             if (result.Success)
             {
@@ -314,6 +321,8 @@ namespace GraphEditor
 
         private void RedrawGraph()
         {
+            Console.WriteLine($"RedrawGraph: {_graphModel.Vertices.Count} вершин, {_graphModel.Edges.Count} рёбер");
+
             GraphCanvas.Children.Clear();
 
             // Рисуем рёбра
