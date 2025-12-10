@@ -13,6 +13,7 @@ using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Shapes;
 using System.IO;
+using GraphEditor.Algorithms;
 
 namespace GraphEditor.Views
 {
@@ -44,8 +45,9 @@ namespace GraphEditor.Views
         private readonly Color _selectedColor = Colors.Red;
 
         public MainWindow()
-        {
-            InitializeComponent();
+        { 
+        InitializeComponent();
+            
 
             // Создаём граф модель с твоей реализацией
             _graphModel = new GraphModel(isDirected: false, allowParallelEdges: true, allowSelfLoops: true);
@@ -70,7 +72,7 @@ namespace GraphEditor.Views
             DrawGraph();
             UpdateStatus();
         }
-
+       
         private void InitializeTestGraph()
         {
             // Добавляем несколько тестовых вершин
