@@ -16,8 +16,7 @@ namespace GraphEditor
         private readonly CommandService _commandService;
         private readonly ObservableGraphModel _graphModel;
         private readonly GraphVisualModel _visualModel;
-        private readonly ContextMenuService _contextMenuService; // ДОБАВЛЕНО
-
+        private readonly ContextMenuService _contextMenuService;
 
         public MainWindow()
         {
@@ -34,7 +33,14 @@ namespace GraphEditor
             // Создаём сервисы
             _commandService = new CommandService(_graphModel, _visualModel);
             _interactionService = new InteractionService(GraphCanvas, _graphModel, _visualModel);
-            _contextMenuService = new ContextMenuService(_commandService, _graphModel); // ДОБАВЛЕНО
+            _contextMenuService = new ContextMenuService(_commandService, _graphModel);
+
+            // ДОБАВЬТЕ ЭТИ СТРОКИ ДЛЯ ПОДПИСКИ НА СОБЫТИЯ МЫШИ:
+            GraphCanvas.MouseRightButtonDown += OnCanvasRightButtonDown;
+            GraphCanvas.MouseLeftButtonDown += OnCanvasMouseDown;
+            GraphCanvas.MouseMove += OnCanvasMouseMove;
+            GraphCanvas.MouseLeftButtonUp += OnCanvasMouseUp;
+            GraphCanvas.PreviewKeyDown += OnCanvasKeyDown;
 
             // Настройка событий
             SetupEventHandlers();
@@ -78,12 +84,6 @@ namespace GraphEditor
             _commandService.OperationCompleted += OnOperationCompleted;
             _commandService.ErrorOccurred += OnErrorOccurred;
             _commandService.VisualChanged += OnVisualChanged;
-
-            // === Canvas события ===
-            GraphCanvas.MouseLeftButtonDown += OnCanvasMouseDown;
-            GraphCanvas.MouseMove += OnCanvasMouseMove;
-            GraphCanvas.MouseLeftButtonUp += OnCanvasMouseUp;
-            GraphCanvas.PreviewKeyDown += OnCanvasKeyDown;
 
             // === События графа ===
             _graphModel.Changed += OnGraphChanged;
