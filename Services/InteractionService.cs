@@ -24,8 +24,9 @@ namespace GraphEditor.Services
         private string _draggedVertexId;
         private Point _dragStartPoint;
 
-        // Для создания ребра
+        // Для создания ребра (ИЗМЕНЕНО)
         private string _edgeStartVertexId;
+        private bool _edgeCreationStartedFromContextMenu = false;
         private Line _tempEdgeLine;
 
         // Для выделения
@@ -40,15 +41,15 @@ namespace GraphEditor.Services
         public event Action SelectionCleared;
         public event Action VisualChanged;
         public event Action<string> DeleteRequested;
-        public event Action<string, Point> VertexRightClicked;    // vertexId, position
-        public event Action<string, Point> EdgeRightClicked;      // edgeId, position
+        public event Action<string, Point> VertexRightClicked;
+        public event Action<string, Point> EdgeRightClicked;
+        public event Action<Point> EmptySpaceRightClicked; // НОВОЕ СОБЫТИЕ
 
         public InteractionService(Canvas canvas, IGraphModel graphModel, GraphVisualModel visualModel)
         {
             _canvas = canvas ?? throw new ArgumentNullException(nameof(canvas));
             _graphModel = graphModel ?? throw new ArgumentNullException(nameof(graphModel));
             _visualModel = visualModel ?? throw new ArgumentNullException(nameof(visualModel));
-
         }
 
         public void SetMode(WorkMode mode)
@@ -58,11 +59,24 @@ namespace GraphEditor.Services
             // Сбрасываем состояние создания ребра
             if (mode != WorkMode.AddEdge)
             {
-                _edgeStartVertexId = null;
-                ClearTempEdge();
+                CancelEdgeCreation();
             }
 
             UpdateStatusForMode();
+        }
+
+        // НОВЫЙ МЕТОД: Начать создание ребра из определенной вершины
+        public void StartEdgeFromVertex(string vertexId)
+        {
+            _currentMode = WorkMode.AddEdge;
+            _edgeStartVertexId = vertexId;
+            _edgeCreationStartedFromContextMenu = true;
+
+            StatusChanged?.Invoke($"Edge from {vertexId} - click on target vertex (or right-click to cancel)");
+
+            // Показываем временную линию от этой вершины
+            var vertexPos = _visualModel.GetVertexPosition(vertexId) ?? new Point(100, 100);
+            StartTempEdge(vertexId, vertexPos);
         }
 
         public WorkMode GetCurrentMode() => _currentMode;
@@ -100,7 +114,6 @@ namespace GraphEditor.Services
             // Обновляем временную линию при создании ребра
             if (_currentMode == WorkMode.AddEdge && _edgeStartVertexId != null && _tempEdgeLine != null)
             {
-                var startPos = _visualModel.GetVertexPosition(_edgeStartVertexId) ?? new Point(0, 0);
                 _tempEdgeLine.X2 = position.X;
                 _tempEdgeLine.Y2 = position.Y;
             }
@@ -138,6 +151,7 @@ namespace GraphEditor.Services
             }
             else if (key == Key.Escape)
             {
+                CancelEdgeCreation();
                 ClearSelection();
                 SetMode(WorkMode.Select);
             }
@@ -180,7 +194,7 @@ namespace GraphEditor.Services
                 {
                     // Первый клик - выбираем начальную вершину
                     _edgeStartVertexId = vertexId;
-                    StatusChanged?.Invoke($"Edge from {vertexId} - select target vertex");
+                    StatusChanged?.Invoke($"Edge from {vertexId} - click on target vertex (or right-click to cancel)");
 
                     // Показываем временную линию
                     StartTempEdge(vertexId, position);
@@ -190,16 +204,14 @@ namespace GraphEditor.Services
                     // Второй клик на другой вершине - создаём ребро
                     EdgeAddRequested?.Invoke(_edgeStartVertexId, vertexId);
 
-                    _edgeStartVertexId = null;
-                    ClearTempEdge();
-                    SetMode(WorkMode.AddEdge);
+                    CancelEdgeCreation();
+                    StatusChanged?.Invoke($"Edge created: {_edgeStartVertexId}-{vertexId}");
                 }
                 else
                 {
                     // Клик на той же вершине - отмена
-                    StatusChanged?.Invoke("Edge creation cancelled");
-                    _edgeStartVertexId = null;
-                    ClearTempEdge();
+                    CancelEdgeCreation();
+                    StatusChanged?.Invoke("Edge creation cancelled (clicked on same vertex)");
                 }
             }
             else
@@ -207,8 +219,9 @@ namespace GraphEditor.Services
                 // Клик не на вершине
                 if (_edgeStartVertexId != null)
                 {
-                    _edgeStartVertexId = null;
-                    ClearTempEdge();
+                    // Отменяем создание ребра
+                    CancelEdgeCreation();
+                    StatusChanged?.Invoke("Edge creation cancelled (clicked on empty space)");
                 }
             }
         }
@@ -216,8 +229,10 @@ namespace GraphEditor.Services
         private void HandleRightClick(Point position)
         {
             var elementId = FindElementAtPoint(position);
+
             if (!string.IsNullOrEmpty(elementId))
             {
+                // Клик на элементе
                 if (_graphModel.Vertices.ContainsKey(elementId))
                 {
                     VertexRightClicked?.Invoke(elementId, position);
@@ -226,8 +241,11 @@ namespace GraphEditor.Services
                 {
                     EdgeRightClicked?.Invoke(elementId, position);
                 }
-
-                ElementSelected?.Invoke(elementId);
+            }
+            else
+            {
+                // Клик на пустом месте
+                EmptySpaceRightClicked?.Invoke(position);
             }
         }
 
@@ -354,6 +372,13 @@ namespace GraphEditor.Services
             }
         }
 
+        private void CancelEdgeCreation()
+        {
+            _edgeStartVertexId = null;
+            _edgeCreationStartedFromContextMenu = false;
+            ClearTempEdge();
+        }
+
         private void UpdateStatusForMode()
         {
             switch (_currentMode)
@@ -368,7 +393,10 @@ namespace GraphEditor.Services
                     StatusChanged?.Invoke("Mode: Add Vertex");
                     break;
                 case WorkMode.AddEdge:
-                    StatusChanged?.Invoke("Mode: Add Edge");
+                    if (_edgeCreationStartedFromContextMenu && !string.IsNullOrEmpty(_edgeStartVertexId))
+                        StatusChanged?.Invoke($"Edge from {_edgeStartVertexId} - click on target vertex");
+                    else
+                        StatusChanged?.Invoke("Mode: Add Edge (click two vertices)");
                     break;
             }
         }

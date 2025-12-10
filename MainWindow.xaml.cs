@@ -18,6 +18,11 @@ namespace GraphEditor
         private readonly GraphVisualModel _visualModel;
         private readonly ContextMenuService _contextMenuService;
 
+        // Поля для обработки двойного клика
+        private DateTime _lastClickTime = DateTime.MinValue;
+        private string _lastClickedElementId = null;
+        private const int DoubleClickInterval = 500;
+
         public MainWindow()
         {
             InitializeComponent();
@@ -35,12 +40,8 @@ namespace GraphEditor
             _interactionService = new InteractionService(GraphCanvas, _graphModel, _visualModel);
             _contextMenuService = new ContextMenuService(_commandService, _graphModel);
 
-            // ДОБАВЬТЕ ЭТИ СТРОКИ ДЛЯ ПОДПИСКИ НА СОБЫТИЯ МЫШИ:
-            GraphCanvas.MouseRightButtonDown += OnCanvasRightButtonDown;
-            GraphCanvas.MouseLeftButtonDown += OnCanvasMouseDown;
-            GraphCanvas.MouseMove += OnCanvasMouseMove;
-            GraphCanvas.MouseLeftButtonUp += OnCanvasMouseUp;
-            GraphCanvas.PreviewKeyDown += OnCanvasKeyDown;
+            // Подписка на события из ContextMenuService
+            _contextMenuService.StartEdgeFromVertexRequested += StartEdgeFromVertex;
 
             // Настройка событий
             SetupEventHandlers();
@@ -75,15 +76,21 @@ namespace GraphEditor
             _interactionService.SelectionCleared += OnSelectionCleared;
             _interactionService.VisualChanged += OnVisualChanged;
             _interactionService.DeleteRequested += OnDeleteRequested;
-
-            // ДОБАВЛЕНО: Подписка на события правого клика
             _interactionService.VertexRightClicked += OnVertexRightClicked;
             _interactionService.EdgeRightClicked += OnEdgeRightClicked;
+            _interactionService.EmptySpaceRightClicked += OnEmptySpaceRightClicked;
 
             // === Подписка на события CommandService ===
             _commandService.OperationCompleted += OnOperationCompleted;
             _commandService.ErrorOccurred += OnErrorOccurred;
             _commandService.VisualChanged += OnVisualChanged;
+
+            // === Canvas события ===
+            GraphCanvas.MouseLeftButtonDown += OnCanvasMouseDown;
+            GraphCanvas.MouseMove += OnCanvasMouseMove;
+            GraphCanvas.MouseLeftButtonUp += OnCanvasMouseUp;
+            GraphCanvas.MouseRightButtonDown += OnCanvasRightButtonDown;
+            GraphCanvas.PreviewKeyDown += OnCanvasKeyDown;
 
             // === События графа ===
             _graphModel.Changed += OnGraphChanged;
@@ -116,6 +123,39 @@ namespace GraphEditor
         private void OnCanvasMouseDown(object sender, MouseButtonEventArgs e)
         {
             var position = e.GetPosition(GraphCanvas);
+
+            if (e.ChangedButton == MouseButton.Left)
+            {
+                var elementId = FindElementAtPosition(position);
+
+                // Проверка на двойной клик по ребру
+                if (!string.IsNullOrEmpty(elementId) && _graphModel.Edges.ContainsKey(elementId))
+                {
+                    var now = DateTime.Now;
+                    var timeSinceLastClick = (now - _lastClickTime).TotalMilliseconds;
+
+                    if (_lastClickedElementId == elementId && timeSinceLastClick < DoubleClickInterval)
+                    {
+                        // Двойной клик по ребру - изменение веса
+                        OnEdgeDoubleClicked(elementId);
+                        _lastClickTime = DateTime.MinValue;
+                        _lastClickedElementId = null;
+                        return; // Не передаем дальше в InteractionService
+                    }
+
+                    // Запоминаем для следующего клика
+                    _lastClickTime = now;
+                    _lastClickedElementId = elementId;
+                }
+                else
+                {
+                    // Сбрасываем, если кликнули не на ребре
+                    _lastClickTime = DateTime.MinValue;
+                    _lastClickedElementId = null;
+                }
+            }
+
+            // Передаем в InteractionService (обычный клик или правый клик)
             _interactionService.HandleMouseDown(position, e.ChangedButton, Keyboard.Modifiers);
         }
 
@@ -141,6 +181,67 @@ namespace GraphEditor
             _interactionService.HandleKeyDown(e.Key, Keyboard.Modifiers);
         }
 
+        // === Вспомогательные методы для поиска элементов ===
+
+        private string FindElementAtPosition(Point position)
+        {
+            // Сначала ищем вершину
+            var vertexId = FindVertexAtPosition(position);
+            if (!string.IsNullOrEmpty(vertexId))
+                return vertexId;
+
+            // Потом ищем ребро
+            return FindEdgeAtPosition(position);
+        }
+
+        private string FindVertexAtPosition(Point position)
+        {
+            foreach (var vertex in _graphModel.Vertices.Values)
+            {
+                var vertexPos = _visualModel.GetVertexPosition(vertex.Id);
+                if (vertexPos.HasValue)
+                {
+                    var distance = Math.Sqrt(
+                        Math.Pow(position.X - vertexPos.Value.X, 2) +
+                        Math.Pow(position.Y - vertexPos.Value.Y, 2));
+
+                    if (distance <= 50)
+                        return vertex.Id;
+                }
+            }
+            return null;
+        }
+
+        private string FindEdgeAtPosition(Point position)
+        {
+            foreach (var edge in _graphModel.Edges.Values)
+            {
+                var sourcePos = _visualModel.GetVertexPosition(edge.Source) ?? new Point(0, 0);
+                var targetPos = _visualModel.GetVertexPosition(edge.Target) ?? new Point(0, 0);
+
+                var distance = DistanceToLine(position, sourcePos, targetPos);
+                if (distance < 10)
+                    return edge.Id;
+            }
+            return null;
+        }
+
+        private double DistanceToLine(Point p, Point lineStart, Point lineEnd)
+        {
+            var lineLength = Math.Sqrt(Math.Pow(lineEnd.X - lineStart.X, 2) + Math.Pow(lineEnd.Y - lineStart.Y, 2));
+            if (lineLength == 0) return Math.Sqrt(Math.Pow(p.X - lineStart.X, 2) + Math.Pow(p.Y - lineStart.Y, 2));
+
+            var t = Math.Max(0, Math.Min(1, ((p.X - lineStart.X) * (lineEnd.X - lineStart.X) +
+                                            (p.Y - lineStart.Y) * (lineEnd.Y - lineStart.Y)) / (lineLength * lineLength)));
+
+            var projection = new Point(
+                lineStart.X + t * (lineEnd.X - lineStart.X),
+                lineStart.Y + t * (lineEnd.Y - lineStart.Y)
+            );
+
+            return Math.Sqrt(Math.Pow(p.X - projection.X, 2) + Math.Pow(p.Y - projection.Y, 2));
+        }
+
         // === Обработчики событий сервисов ===
 
         private void OnStatusChanged(string message)
@@ -160,6 +261,22 @@ namespace GraphEditor
             {
                 string edgeId = $"{source}-{target}";
                 _commandService.AddEdge(edgeId, source, target, weight);
+            }
+        }
+
+        // Метод для обработки двойного клика по ребру
+        private void OnEdgeDoubleClicked(string edgeId)
+        {
+            if (_graphModel.TryGetEdge(edgeId, out var edge))
+            {
+                var dialog = new InputDialog($"Enter new weight for edge {edge.Source}-{edge.Target}:",
+                    "Change Edge Weight",
+                    edge.Weight?.ToString() ?? "1.0");
+
+                if (dialog.ShowDialog() == true && double.TryParse(dialog.Answer, out double newWeight))
+                {
+                    _commandService.SetEdgeWeight(edgeId, newWeight);
+                }
             }
         }
 
@@ -198,7 +315,7 @@ namespace GraphEditor
             }
         }
 
-        // ДОБАВЛЕНО: Обработчики правого клика
+        // Обработчики правого клика
         private void OnVertexRightClicked(string vertexId, Point position)
         {
             _contextMenuService.ShowVertexContextMenu(vertexId, position);
@@ -207,6 +324,18 @@ namespace GraphEditor
         private void OnEdgeRightClicked(string edgeId, Point position)
         {
             _contextMenuService.ShowEdgeContextMenu(edgeId, position);
+        }
+
+        // НОВЫЙ МЕТОД: Обработка правого клика в пустом месте
+        private void OnEmptySpaceRightClicked(Point position)
+        {
+            _contextMenuService.ShowEmptySpaceContextMenu(position);
+        }
+
+        // Метод для запуска создания ребра из вершины
+        private void StartEdgeFromVertex(string vertexId)
+        {
+            _interactionService.StartEdgeFromVertex(vertexId);
         }
 
         private void OnOperationCompleted(string message)
