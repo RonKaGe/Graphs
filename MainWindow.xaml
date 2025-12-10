@@ -40,6 +40,7 @@
         </Style>
         
         <Style x:Key="ToolbarButton" TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
+           
             <Setter Property="Background" Value="#E6F3FF"/>
             <Setter Property="BorderBrush" Value="#87CEEB"/>
             <Setter Property="Margin" Value="4,2"/>
@@ -177,6 +178,13 @@
                     <Button Name="BtnDelete" Style="{StaticResource UtilityButton}" 
                             Content="🗑️ Delete" ToolTip="Delete selected element (or press Delete key)"
                             VerticalAlignment="Center" Margin="5,0,0,0"/>
+                    <Separator Width="10" Background="Transparent"/>
+                    <Button Name="BtnAlgorithms" Style="{StaticResource UtilityButton}" 
+                Content="⚡ Algorithms" ToolTip="Run graph algorithms"
+                VerticalAlignment="Center" Margin="5,0,0,0"/>
+                    <Button Name="BtnResetAlgorithm" Style="{StaticResource UtilityButton}" 
+                Content="🔄 Reset View" ToolTip="Reset algorithm visualization"
+                VerticalAlignment="Center" Margin="5,0,0,0"/>
                 </StackPanel>
             </Border>
             

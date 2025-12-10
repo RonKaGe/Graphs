@@ -1,4 +1,5 @@
-﻿using GraphEditor.Core;
+﻿using GraphEditor.Algorithms;
+using GraphEditor.Core;
 using GraphEditor.Core.Models;
 using GraphEditor.Services;
 using GraphEditor.Visual;
@@ -7,6 +8,7 @@ using System;
 using System.Windows;
 using System.Windows.Input;
 using System.Windows.Media;
+using GraphEditor.Views;
 
 namespace GraphEditor
 {
@@ -17,6 +19,8 @@ namespace GraphEditor
         private readonly ObservableGraphModel _graphModel;
         private readonly GraphVisualModel _visualModel;
         private readonly ContextMenuService _contextMenuService;
+
+        private readonly AlgorithmService _algorithmService;
 
         public MainWindow()
         {
@@ -35,6 +39,7 @@ namespace GraphEditor
             _interactionService = new InteractionService(GraphCanvas, _graphModel, _visualModel);
             _contextMenuService = new ContextMenuService(_commandService, _graphModel);
 
+            _algorithmService = new AlgorithmService(_graphModel, _visualModel);
             // ДОБАВЬТЕ ЭТИ СТРОКИ ДЛЯ ПОДПИСКИ НА СОБЫТИЯ МЫШИ:
             GraphCanvas.MouseRightButtonDown += OnCanvasRightButtonDown;
             GraphCanvas.MouseLeftButtonDown += OnCanvasMouseDown;
@@ -65,6 +70,28 @@ namespace GraphEditor
             _graphModel.AddEdge("EA", "E", "A", 4.0);
         }
 
+        private void ShowAlgorithmDialog()
+        {
+            var dialog = new AlgorithmDialog(_algorithmService, _graphModel.Vertices.Keys.ToList());
+            dialog.Owner = this;
+
+            if (dialog.ShowDialog() == true && dialog.SelectedAlgorithm != null)
+            {
+                var result = _algorithmService.RunAlgorithm(dialog.SelectedAlgorithm.Id, dialog.Parameters);
+
+                if (result.Success)
+                {
+                    MessageBox.Show(result.Message, "Algorithm Result",
+                        MessageBoxButton.OK, MessageBoxImage.Information);
+                }
+                else
+                {
+                    MessageBox.Show(result.Message, "Algorithm Error",
+                        MessageBoxButton.OK, MessageBoxImage.Error);
+                }
+            }
+        }
+
         private void SetupEventHandlers()
         {
             // === Подписка на события InteractionService ===
@@ -85,8 +112,25 @@ namespace GraphEditor
             _commandService.ErrorOccurred += OnErrorOccurred;
             _commandService.VisualChanged += OnVisualChanged;
 
-            // === События графа ===
-            _graphModel.Changed += OnGraphChanged;
+            // Обработчики кнопок
+            BtnAlgorithms.Click += (s, e) => ShowAlgorithmDialog();
+            BtnResetAlgorithm.Click += (s, e) =>
+            {
+                _visualModel.ResetColors();
+                StatusText.Text = "Сброс визуализации алгоритма";
+            };
+
+            BtnAlgorithms.Click += (s, e) => ShowAlgorithmDialog();
+            BtnResetAlgorithm.Click += (s, e) => _algorithmService.ResetVisualization();
+
+            // Обработчики для меню алгоритмов:
+            MenuItemAlgoDijkstra.Click += (s, e) => RunSpecificAlgorithm("Dijkstra");
+            MenuItemAlgoMST.Click += (s, e) => RunSpecificAlgorithm("MST");
+            MenuItemAlgoMaxFlow.Click += (s, e) => RunSpecificAlgorithm("MaxFlow");
+        
+
+        // === События графа ===
+        _graphModel.Changed += OnGraphChanged;
 
             // === Обработчики кнопок ===
             BtnSelectMode.Click += (s, e) => _interactionService.SetMode(WorkMode.Select);
@@ -109,6 +153,36 @@ namespace GraphEditor
             MenuItemFileExit.Click += (s, e) => Close();
             MenuItemEditSelectAll.Click += (s, e) => SelectAll();
             MenuItemHelpAbout.Click += (s, e) => ShowAbout();
+        }
+
+        private void RunSpecificAlgorithm(string algorithmId)
+        {
+            var parameters = new Dictionary<string, string>();
+
+            switch (algorithmId)
+            {
+                case "Dijkstra":
+                    parameters["Start Vertex"] = "A";
+                    parameters["Target Vertex"] = "E";
+                    break;
+                case "MaxFlow":
+                    parameters["Source"] = "A";
+                    parameters["Sink"] = "E";
+                    break;
+            }
+
+            var result = _algorithmService.RunAlgorithm(algorithmId, parameters);
+
+            if (result.Success)
+            {
+                MessageBox.Show(result.Message, "Algorithm Result",
+                    MessageBoxButton.OK, MessageBoxImage.Information);
+            }
+            else
+            {
+                MessageBox.Show(result.Message, "Algorithm Error",
+                    MessageBoxButton.OK, MessageBoxImage.Error);
+            }
         }
 
         // === Обработчики событий Canvas ===
