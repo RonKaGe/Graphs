@@ -17,6 +17,140 @@ namespace GraphEditor
         private readonly ObservableGraphModel _graphModel;
         private readonly GraphVisualModel _visualModel;
 
+
+        /////
+        private readonly MatrixService _matrixService = new MatrixService();
+        ///////
+
+
+
+
+
+
+
+
+
+
+
+
+        // === МЕТОДЫ ДЛЯ МАТРИЦЫ ===
+
+        private void InitializeMatrixPanel()
+        {
+            try
+            {
+                // Подписываемся на события для обновления матрицы
+                _graphModel.Changed += OnGraphChangedForMatrix;
+                _visualModel.VisualChanged += OnGraphChangedForMatrix;
+
+                // Обработчики кнопок
+                BtnCopyMatrix.Click += (s, e) => CopyMatrixToClipboard();
+                BtnRefreshMatrix.Click += (s, e) => UpdateMatrixDisplay();
+
+                // Первоначальное обновление
+                UpdateMatrixDisplay();
+
+                Console.WriteLine("Matrix panel initialized successfully");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error initializing matrix panel: {ex.Message}");
+                MatrixTextBox.Text = $"Error: {ex.Message}";
+            }
+        }
+        private void OnGraphChangedForMatrix(object sender, EventArgs e)
+        {
+            // Обновляем матрицу в UI потоке
+            Dispatcher.Invoke(() => UpdateMatrixDisplay());
+        }
+        private void UpdateMatrixDisplay()
+        {
+            try
+            {
+                if (_graphModel.Vertices.Count == 0)
+                {
+                    MatrixTextBox.Text = "Graph is empty.\nAdd vertices to see the matrix.";
+                    return;
+                }
+
+                // Строим матрицу смежности (без весов для простоты)
+                var matrix = _graphModel.BuildAdjacencyMatrix(false);
+
+                // Форматируем матрицу
+                var matrixText = _matrixService.FormatAdjacencyMatrix(matrix, _graphModel);
+
+                // Добавляем информацию о вершинах
+                var vertexInfo = BuildVertexIndexInfo();
+
+                MatrixTextBox.Text = vertexInfo + "\n\n" + matrixText;
+            }
+            catch (Exception ex)
+            {
+                MatrixTextBox.Text = $"Error building matrix:\n{ex.Message}\n\n{ex.StackTrace}";
+            }
+        }
+        private string BuildVertexIndexInfo()
+        {
+            try
+            {
+                var vertices = _graphModel.Vertices.Keys.OrderBy(id => id).ToList();
+                if (vertices.Count == 0) return "";
+
+                var sb = new System.Text.StringBuilder();
+
+                sb.AppendLine("=== VERTEX INDEX MAPPING ===");
+                sb.AppendLine("Rows and columns correspond to:");
+                sb.AppendLine();
+
+                for (int i = 0; i < vertices.Count; i++)
+                {
+                    sb.AppendLine($"  Row/Col {i + 1,2} → Vertex '{vertices[i]}'");
+                }
+
+                return sb.ToString();
+            }
+            catch (Exception ex)
+            {
+                return $"Error building vertex info: {ex.Message}";
+            }
+        }
+        private void CopyMatrixToClipboard()
+        {
+            try
+            {
+                if (string.IsNullOrEmpty(MatrixTextBox.Text))
+                {
+                    MessageBox.Show("Matrix is empty", "Info",
+                        MessageBoxButton.OK, MessageBoxImage.Information);
+                    return;
+                }
+
+                System.Windows.Clipboard.SetText(MatrixTextBox.Text);
+                StatusText.Text = "Matrix copied to clipboard!";
+
+                // Визуальная обратная связь
+                BtnCopyMatrix.Content = "✓ Copied!";
+
+                // Через секунду возвращаем обратно
+                System.Threading.Tasks.Task.Delay(1000).ContinueWith(_ =>
+                {
+                    Dispatcher.Invoke(() => BtnCopyMatrix.Content = "📋 Copy");
+                });
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Failed to copy matrix:\n{ex.Message}", "Error",
+                    MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+
+
+
+
+
+
+
         public MainWindow()
         {
             InitializeComponent();
@@ -36,10 +170,26 @@ namespace GraphEditor
             // Настройка событий
             SetupEventHandlers();
 
+            // ===== ИНИЦИАЛИЗАЦИЯ МАТРИЦЫ =====
+            InitializeMatrixPanel();
+
             // Первая отрисовка
             RedrawGraph();
             UpdateStatus();
         }
+
+
+
+
+
+
+
+
+
+
+
+
+
 
         private void InitializeTestGraph()
         {

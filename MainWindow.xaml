@@ -187,71 +187,137 @@
             </Border>
         </Grid>
 
-        <!-- Основная область -->
-        <Grid>
-            <Grid.RowDefinitions>
-                <RowDefinition Height="*"/>
-                <RowDefinition Height="Auto"/>
-            </Grid.RowDefinitions>
+		<!-- Основная область с матрицей -->
+		<Grid>
+			<Grid.ColumnDefinitions>
+				<ColumnDefinition Width="*"/>
+				<!-- Граф -->
+				<ColumnDefinition Width="5"/>
+				<!-- Разделитель -->
+				<ColumnDefinition Width="400"/>
+				<!-- Матрица -->
+			</Grid.ColumnDefinitions>
 
-            <!-- Canvas для отрисовки графа с рамкой -->
-            <Border Grid.Row="0" BorderBrush="#C0C0C0" BorderThickness="2" Margin="8" Background="White"
-                    CornerRadius="3">
-                <Canvas Name="GraphCanvas" 
-                        Background="#FAFAFA"
-                        Focusable="True"
-                        FocusVisualStyle="{x:Null}">
-                    <!-- Граф будет отрисован здесь -->
-                </Canvas>
-            </Border>
+			<Grid.RowDefinitions>
+				<RowDefinition Height="*"/>
+				<RowDefinition Height="Auto"/>
+			</Grid.RowDefinitions>
 
-            <!-- Улучшенная строка состояния -->
-            <StatusBar Grid.Row="1" Background="#2F4F4F" Foreground="White" Height="28">
-                <!-- Статус -->
-                <StatusBarItem>
-                    <Border Background="#3A5F5F" CornerRadius="3" Padding="6,2" Margin="2">
-                        <TextBlock Name="StatusText" Text="✅ Ready" FontWeight="SemiBold"/>
-                    </Border>
-                </StatusBarItem>
+			<!-- Canvas для отрисовки графа с рамкой -->
+			<Border Grid.Column="0" Grid.Row="0"
+					BorderBrush="#C0C0C0" BorderThickness="2" Margin="8"
+					Background="White" CornerRadius="3">
+				<Canvas Name="GraphCanvas"
+						Background="#FAFAFA"
+						Focusable="True"
+						FocusVisualStyle="{x:Null}">
+					<!-- Граф будет отрисован здесь -->
+				</Canvas>
+			</Border>
 
-                <Separator Background="#708090" Width="1" Margin="5,0"/>
+			<!-- ===== ПРАВАЯ ПАНЕЛЬ С МАТРИЦЕЙ ===== -->
+			<GridSplitter Grid.Column="1" Grid.Row="0" Grid.RowSpan="2"
+						  Width="5" Background="#A0A0A0"
+						  HorizontalAlignment="Stretch" ShowsPreview="True"/>
 
-                <!-- Статистика -->
-                <StatusBarItem>
-                    <Border Background="#4682B4" CornerRadius="3" Padding="6,2" Margin="2">
-                        <TextBlock Name="VertexCountText" Text="📌 Vertices: 0" FontWeight="Medium"/>
-                    </Border>
-                </StatusBarItem>
+			<Border Grid.Column="2" Grid.Row="0"
+					Margin="8,8,8,0" BorderBrush="#4682B4" BorderThickness="1"
+					Background="#F8F8FF" CornerRadius="3">
+				<Grid>
+					<Grid.RowDefinitions>
+						<RowDefinition Height="Auto"/>
+						<!-- Заголовок -->
+						<RowDefinition Height="*"/>
+						<!-- Матрица -->
+						<RowDefinition Height="Auto"/>
+						<!-- Кнопки -->
+					</Grid.RowDefinitions>
 
-                <StatusBarItem>
-                    <Border Background="#4682B4" CornerRadius="3" Padding="6,2" Margin="2">
-                        <TextBlock Name="EdgeCountText" Text="➖ Edges: 0" FontWeight="Medium"/>
-                    </Border>
-                </StatusBarItem>
+					<!-- Заголовок панели -->
+					<Border Grid.Row="0" Background="#4682B4" CornerRadius="2,2,0,0"
+							Padding="10,5" Margin="1,1,1,0">
+						<StackPanel Orientation="Horizontal">
+							<TextBlock Text="📊 " FontSize="16" VerticalAlignment="Center"/>
+							<TextBlock Text="Adjacency Matrix"
+									   FontWeight="Bold" Foreground="White"
+									   VerticalAlignment="Center"/>
+						</StackPanel>
+					</Border>
 
-                <Separator Background="#708090" Width="1" Margin="5,0"/>
+					<!-- Поле для матрицы -->
+					<ScrollViewer Grid.Row="1"
+								  VerticalScrollBarVisibility="Auto"
+								  HorizontalScrollBarVisibility="Auto"
+								  Margin="5">
+						<TextBox x:Name="MatrixTextBox"
+								 FontFamily="Consolas, Courier New"
+								 FontSize="11"
+								 IsReadOnly="True"
+								 TextWrapping="NoWrap"
+								 BorderThickness="0"
+								 Background="Transparent"
+								 VerticalAlignment="Top"
+								 Text="Matrix will appear here..."/>
+					</ScrollViewer>
 
-                <!-- Layout статус -->
-                <StatusBarItem>
-                    <Border Background="#5F9EA0" CornerRadius="3" Padding="6,2" Margin="2">
-                        <TextBlock Name="LayoutStatusText" Text="📐 Layout: None" FontWeight="Medium"/>
-                    </Border>
-                </StatusBarItem>
+					<!-- Панель кнопок -->
+					<StackPanel Grid.Row="2" Orientation="Horizontal"
+								HorizontalAlignment="Right" Margin="5">
+						<Button x:Name="BtnCopyMatrix" Content="📋 Copy"
+								Padding="8,3" Margin="0,0,5,0"
+								ToolTip="Copy matrix to clipboard"/>
+						<Button x:Name="BtnRefreshMatrix" Content="🔄 Refresh"
+								Padding="8,3"
+								ToolTip="Refresh matrix"/>
+					</StackPanel>
+				</Grid>
+			</Border>
+			<!-- ===== КОНЕЦ ПРАВОЙ ПАНЕЛИ ===== -->
 
-                <Separator Background="#708090" Width="1" Margin="5,0"/>
+			<!-- Улучшенная строка состояния -->
+			<StatusBar Grid.Column="0" Grid.ColumnSpan="3" Grid.Row="1"
+					   Background="#2F4F4F" Foreground="White" Height="28">
+				<!-- ... существующий код StatusBar без изменений ... -->
+				<StatusBarItem>
+					<Border Background="#3A5F5F" CornerRadius="3" Padding="6,2" Margin="2">
+						<TextBlock Name="StatusText" Text="✅ Ready" FontWeight="SemiBold"/>
+					</Border>
+				</StatusBarItem>
 
-                <!-- Режим работы -->
-                <StatusBarItem>
-                    <Border Background="#D2691E" CornerRadius="3" Padding="6,2" Margin="2">
-                        <TextBlock Name="ModeText" Text="🎯 Mode: Select" FontWeight="Medium"/>
-                    </Border>
-                </StatusBarItem>
+				<Separator Background="#708090" Width="1" Margin="5,0"/>
 
-                <!-- Пустое пространство справа -->
-                <StatusBarItem HorizontalAlignment="Right">
-                    <TextBlock Text="Graph Editor v1.0" Opacity="0.7" Margin="10,0" FontSize="11"/>
-                </StatusBarItem>
-            </StatusBar>
-        </Grid>
+				<StatusBarItem>
+					<Border Background="#4682B4" CornerRadius="3" Padding="6,2" Margin="2">
+						<TextBlock Name="VertexCountText" Text="📌 Vertices: 0" FontWeight="Medium"/>
+					</Border>
+				</StatusBarItem>
+
+				<StatusBarItem>
+					<Border Background="#4682B4" CornerRadius="3" Padding="6,2" Margin="2">
+						<TextBlock Name="EdgeCountText" Text="➖ Edges: 0" FontWeight="Medium"/>
+					</Border>
+				</StatusBarItem>
+
+				<Separator Background="#708090" Width="1" Margin="5,0"/>
+
+				<StatusBarItem>
+					<Border Background="#5F9EA0" CornerRadius="3" Padding="6,2" Margin="2">
+						<TextBlock Name="LayoutStatusText" Text="📐 Layout: None" FontWeight="Medium"/>
+					</Border>
+				</StatusBarItem>
+
+				<Separator Background="#708090" Width="1" Margin="5,0"/>
+
+				<StatusBarItem>
+					<Border Background="#D2691E" CornerRadius="3" Padding="6,2" Margin="2">
+						<TextBlock Name="ModeText" Text="🎯 Mode: Select" FontWeight="Medium"/>
+					</Border>
+				</StatusBarItem>
+
+				<StatusBarItem HorizontalAlignment="Right">
+					<TextBlock Text="Graph Editor v1.0" Opacity="0.7" Margin="10,0" FontSize="11"/>
+				</StatusBarItem>
+			</StatusBar>
+		</Grid>
     </DockPanel>
 </Window>
