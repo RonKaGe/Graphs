@@ -212,8 +212,6 @@ namespace GraphEditor.Algorithms
             if (visualModel == null || result == null || !result.Success)
                 return;
 
-            // Сбрасываем цвета
-            visualModel.ResetColors();
 
             // Выделяем начальную вершину
             if (result.Data.TryGetValue("startVertex", out object startObj) && startObj is string startVertex)

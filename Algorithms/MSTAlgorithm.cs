@@ -159,8 +159,6 @@ namespace GraphEditor.Algorithms
             if (visualModel == null || result == null || !result.Success)
                 return;
 
-            // Сбрасываем цвета
-            visualModel.ResetColors();
 
             // Выделяем рёбра MST
             if (result.Data.TryGetValue("mstEdges", out object edgesObj) && edgesObj is List<string> mstEdges)

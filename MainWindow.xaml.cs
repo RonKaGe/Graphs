@@ -81,11 +81,19 @@ namespace GraphEditor
 
             if (dialog.ShowDialog() == true && dialog.SelectedAlgorithm != null)
             {
+                // 1. Сбросить цвета перед новым алгоритмом
+                _visualModel.ResetColors();
+
+                // 2. Выполнить алгоритм
                 var result = _algorithmService.RunAlgorithm(dialog.SelectedAlgorithm.Id, dialog.Parameters);
 
-                Console.WriteLine($"Алгоритм {dialog.SelectedAlgorithm.Id} выполнен: {result.Success}");
-                Console.WriteLine($"Сообщение: {result.Message}");
+                // 3. Сразу перерисовать граф (ДО MessageBox!)
+                RedrawGraph();
 
+                // 4. Обновить статус
+                UpdateStatus();
+
+                // 5. Показать результат
                 if (result.Success)
                 {
                     MessageBox.Show(result.Message, "Algorithm Result",
@@ -290,6 +298,16 @@ namespace GraphEditor
         private void RedrawGraph()
         {
             Console.WriteLine($"RedrawGraph: {_graphModel.Vertices.Count} вершин, {_graphModel.Edges.Count} рёбер");
+
+            // Проверим цвета в visualModel
+            Console.WriteLine("Цвета вершин в visualModel:");
+            foreach (var vertex in _graphModel.Vertices.Values)
+            {
+                var color = _visualModel.VertexColors.ContainsKey(vertex.Id)
+                    ? _visualModel.VertexColors[vertex.Id]
+                    : Colors.LightBlue;
+                Console.WriteLine($"  {vertex.Id}: {color}");
+            }
 
             GraphCanvas.Children.Clear();
 

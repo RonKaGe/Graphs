@@ -238,8 +238,6 @@ namespace GraphEditor.Algorithms
             if (visualModel == null || result == null || !result.Success)
                 return;
 
-            // Сбрасываем цвета
-            visualModel.ResetColors();
 
             // Выделяем source и sink
             if (result.Data.TryGetValue("source", out object sourceObj) && sourceObj is string source)
