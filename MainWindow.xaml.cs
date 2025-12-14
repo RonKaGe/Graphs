@@ -83,6 +83,9 @@ namespace GraphEditor
             {
                 var result = _algorithmService.RunAlgorithm(dialog.SelectedAlgorithm.Id, dialog.Parameters);
 
+                Console.WriteLine($"Алгоритм {dialog.SelectedAlgorithm.Id} выполнен: {result.Success}");
+                Console.WriteLine($"Сообщение: {result.Message}");
+
                 if (result.Success)
                 {
                     MessageBox.Show(result.Message, "Algorithm Result",
@@ -124,17 +127,8 @@ namespace GraphEditor
                 StatusText.Text = "Сброс визуализации алгоритма";
             };
 
-            BtnAlgorithms.Click += (s, e) => ShowAlgorithmDialog();
-            BtnResetAlgorithm.Click += (s, e) => _algorithmService.ResetVisualization();
-
-            // Обработчики для меню алгоритмов:
-            MenuItemAlgoDijkstra.Click += (s, e) => RunSpecificAlgorithm("Dijkstra");
-            MenuItemAlgoMST.Click += (s, e) => RunSpecificAlgorithm("MST");
-            MenuItemAlgoMaxFlow.Click += (s, e) => RunSpecificAlgorithm("MaxFlow");
-        
-
-        // === События графа ===
-        _graphModel.Changed += OnGraphChanged;
+            // === События графа ===
+            _graphModel.Changed += OnGraphChanged;
 
             // === Обработчики кнопок ===
             BtnSelectMode.Click += (s, e) => _interactionService.SetMode(WorkMode.Select);
@@ -157,40 +151,14 @@ namespace GraphEditor
             MenuItemFileExit.Click += (s, e) => Close();
             MenuItemEditSelectAll.Click += (s, e) => SelectAll();
             MenuItemHelpAbout.Click += (s, e) => ShowAbout();
+
+            // === ИСПРАВЛЕННЫЕ обработчики для меню алгоритмов ===
+            MenuItemAlgoDijkstra.Click += (s, e) => ShowAlgorithmDialog();
+            MenuItemAlgoMST.Click += (s, e) => ShowAlgorithmDialog();
+            MenuItemAlgoMaxFlow.Click += (s, e) => ShowAlgorithmDialog();
         }
 
-        private void RunSpecificAlgorithm(string algorithmId)
-        {
-            Console.WriteLine($"Запуск алгоритма: {algorithmId}");
 
-            var parameters = new Dictionary<string, string>();
-
-            switch (algorithmId)
-            {
-                case "Dijkstra":
-                    parameters["Start Vertex"] = "A";
-                    parameters["Target Vertex"] = "E";
-                    break;
-                case "MaxFlow":
-                    parameters["Source"] = "A";
-                    parameters["Sink"] = "E";
-                    break;
-            }
-
-            var result = _algorithmService.RunAlgorithm(algorithmId, parameters);
-            Console.WriteLine($"Результат: Success={result.Success}, Message={result.Message}");
-
-            if (result.Success)
-            {
-                MessageBox.Show(result.Message, "Algorithm Result",
-                    MessageBoxButton.OK, MessageBoxImage.Information);
-            }
-            else
-            {
-                MessageBox.Show(result.Message, "Algorithm Error",
-                    MessageBoxButton.OK, MessageBoxImage.Error);
-            }
-        }
 
         // === Обработчики событий Canvas ===
 

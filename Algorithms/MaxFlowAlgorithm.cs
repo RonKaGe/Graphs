@@ -11,6 +11,9 @@ namespace GraphEditor.Algorithms
     {
         public AlgorithmResult Execute(IGraphModel graph, string sourceId, string sinkId)
         {
+            Console.WriteLine($"MaxFlow.Execute вызван: source={sourceId}, sink={sinkId}");
+            Console.WriteLine($"Всего рёбер: {graph.Edges.Count}");
+
             var result = new AlgorithmResult();
 
             try

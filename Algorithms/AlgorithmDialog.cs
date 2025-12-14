@@ -13,7 +13,7 @@ namespace GraphEditor.Views
         private readonly AlgorithmService _algorithmService;
         private readonly List<string> _availableVertices;
 
-        private ComboBox _comboAlgorithms;
+        public ComboBox _comboAlgorithms;
         private TextBlock _txtDescription;
         private StackPanel _parametersPanel;
         private Dictionary<string, Control> _parameterControls;
@@ -154,6 +154,17 @@ namespace GraphEditor.Views
             Content = mainGrid;
         }
 
+        public void SelectAlgorithmById(string algorithmId)
+        {
+            foreach (AlgorithmInfo algo in _comboAlgorithms.Items)
+            {
+                if (algo.Id == algorithmId)
+                {
+                    _comboAlgorithms.SelectedItem = algo;
+                    break;
+                }
+            }
+        }
         private void LoadAlgorithms()
         {
             var algorithms = _algorithmService.GetAvailableAlgorithms();
@@ -188,6 +199,8 @@ namespace GraphEditor.Views
                     if (parametersGroupBox != null)
                         parametersGroupBox.Visibility = Visibility.Visible;
 
+                    int vertexParamIndex = 0; // Счётчик для параметров-вершин
+
                     foreach (var param in algorithm.Parameters)
                     {
                         var grid = new Grid();
@@ -209,9 +222,37 @@ namespace GraphEditor.Views
                             var comboBox = new ComboBox
                             {
                                 ItemsSource = _availableVertices,
-                                SelectedItem = param.DefaultValue ?? (_availableVertices.Count > 0 ? _availableVertices[0] : null),
                                 Margin = new Thickness(5)
                             };
+
+                            // ВЫБИРАЕМ РАЗНЫЕ ВЕРШИНЫ ДЛЯ РАЗНЫХ ПАРАМЕТРОВ
+                            if (vertexParamIndex == 0 && _availableVertices.Count > 0)
+                            {
+                                // Первый параметр-вершина: выбираем первую вершину
+                                comboBox.SelectedItem = _availableVertices[0];
+                            }
+                            else if (vertexParamIndex == 1 && _availableVertices.Count > 1)
+                            {
+                                // Второй параметр-вершина: выбираем вторую вершину
+                                comboBox.SelectedItem = _availableVertices[1];
+                            }
+                            else if (vertexParamIndex >= 2 && _availableVertices.Count > vertexParamIndex)
+                            {
+                                // Третий и далее: выбираем по порядку
+                                comboBox.SelectedItem = _availableVertices[vertexParamIndex];
+                            }
+                            else if (param.DefaultValue != null)
+                            {
+                                // Или используем значение по умолчанию
+                                comboBox.SelectedItem = param.DefaultValue;
+                            }
+                            else if (_availableVertices.Count > 0)
+                            {
+                                // Или просто первую
+                                comboBox.SelectedItem = _availableVertices[0];
+                            }
+
+                            vertexParamIndex++;
                             inputControl = comboBox;
                         }
                         else

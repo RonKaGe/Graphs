@@ -66,6 +66,7 @@ namespace GraphEditor.Algorithms
 
         public AlgorithmResult RunAlgorithm(string algorithmId, Dictionary<string, string> parameters)
         {
+
             try
             {
                 return algorithmId switch
