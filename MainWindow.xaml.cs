@@ -278,8 +278,8 @@ namespace GraphEditor
             _commandService.VisualChanged += OnVisualChanged;
 
             // Обработчики кнопок
-            BtnAlgorithms.Click += (s, e) => ShowAlgorithmDialog();
-            BtnResetAlgorithm.Click += (s, e) =>
+            //BtnAlgorithms.Click += (s, e) => ShowAlgorithmDialog();
+            //BtnResetAlgorithm.Click += (s, e) =>
             {
                 _visualModel.ResetColors();
                 StatusText.Text = "Сброс визуализации алгоритма";
