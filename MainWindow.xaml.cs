@@ -687,8 +687,8 @@ namespace GraphEditor
                 _visualModel.VisualChanged += OnGraphChangedForMatrix;
 
                 // Обработчики кнопок
-                BtnCopyMatrix.Click += (s, e) => CopyMatrixToClipboard();
-                BtnRefreshMatrix.Click += (s, e) => UpdateMatrixDisplay();
+                //BtnCopyMatrix.Click += (s, e) => CopyMatrixToClipboard();
+                //BtnRefreshMatrix.Click += (s, e) => UpdateMatrixDisplay();
 
                 // Первоначальное обновление
                 UpdateMatrixDisplay();
@@ -777,12 +777,12 @@ namespace GraphEditor
                 StatusText.Text = "Matrix copied to clipboard!";
 
                 // Визуальная обратная связь
-                BtnCopyMatrix.Content = "✓ Copied!";
+                //BtnCopyMatrix.Content = "✓ Copied!";
 
                 // Через секунду возвращаем обратно
                 System.Threading.Tasks.Task.Delay(1000).ContinueWith(_ =>
                 {
-                    Dispatcher.Invoke(() => BtnCopyMatrix.Content = "📋 Copy");
+                   // Dispatcher.Invoke(() => BtnCopyMatrix.Content = "📋 Copy");
                 });
             }
             catch (Exception ex)
