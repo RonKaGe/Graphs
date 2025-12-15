@@ -8,7 +8,7 @@
         Height="700" 
         Width="1000"
         WindowStartupLocation="CenterScreen">
-    
+
     <Window.Resources>
         <Style TargetType="Button">
             <Setter Property="Margin" Value="3,2"/>
@@ -19,55 +19,64 @@
             <Setter Property="BorderBrush" Value="#A9A9A9"/>
             <Setter Property="BorderThickness" Value="1"/>
         </Style>
-        
+
         <Style TargetType="Menu">
             <Setter Property="Background" Value="#2F4F4F"/>
             <Setter Property="Foreground" Value="White"/>
             <Setter Property="FontSize" Value="13"/>
             <Setter Property="Height" Value="28"/>
         </Style>
-        
+
         <Style TargetType="MenuItem">
             <Setter Property="Padding" Value="12,4"/>
             <Setter Property="Foreground" Value="White"/>
             <Setter Property="FontSize" Value="12"/>
+            <Setter Property="Background" Value="#3A5F5F"/>
+            <Setter Property="BorderBrush" Value="Transparent"/>
         </Style>
-        
+
+        <!-- Стиль для выпадающего меню -->
+        <Style TargetType="ContextMenu">
+            <Setter Property="Background" Value="#3A5F5F"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="BorderBrush" Value="#5F9EA0"/>
+            <Setter Property="BorderThickness" Value="1"/>
+        </Style>
+
         <Style TargetType="Separator">
             <Setter Property="Background" Value="#708090"/>
             <Setter Property="Margin" Value="5,2"/>
             <Setter Property="Height" Value="1"/>
         </Style>
-        
+
         <Style x:Key="ToolbarButton" TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
-           
             <Setter Property="Background" Value="#E6F3FF"/>
             <Setter Property="BorderBrush" Value="#87CEEB"/>
             <Setter Property="Margin" Value="4,2"/>
             <Setter Property="Padding" Value="8,4"/>
             <Setter Property="MinWidth" Value="85"/>
         </Style>
-        
+
         <Style x:Key="ModeButton" TargetType="Button" BasedOn="{StaticResource ToolbarButton}">
             <Setter Property="Background" Value="#F5F5DC"/>
             <Setter Property="BorderBrush" Value="#DAA520"/>
         </Style>
-        
+
         <Style x:Key="ActionButton" TargetType="Button" BasedOn="{StaticResource ToolbarButton}">
             <Setter Property="Background" Value="#F0FFF0"/>
             <Setter Property="BorderBrush" Value="#90EE90"/>
         </Style>
-        
+
         <Style x:Key="LayoutButton" TargetType="Button" BasedOn="{StaticResource ToolbarButton}">
             <Setter Property="Background" Value="#FFF0F5"/>
             <Setter Property="BorderBrush" Value="#DB7093"/>
         </Style>
-        
+
         <Style x:Key="UtilityButton" TargetType="Button" BasedOn="{StaticResource ToolbarButton}">
             <Setter Property="Background" Value="#FFFFE0"/>
             <Setter Property="BorderBrush" Value="#FFD700"/>
         </Style>
-        
+
         <!-- Стиль для фиксированных панелей -->
         <Style x:Key="FixedToolBar" TargetType="ToolBar">
             <Setter Property="IsEnabled" Value="True"/>
@@ -75,7 +84,7 @@
             <Setter Property="Focusable" Value="False"/>
         </Style>
     </Window.Resources>
-    
+
     <DockPanel>
         <!-- Меню (тёмное для контраста) -->
         <Menu DockPanel.Dock="Top">
@@ -85,32 +94,32 @@
                 <Separator/>
                 <MenuItem Header="❌ Exit" Name="MenuItemFileExit"/>
             </MenuItem>
-            
+
             <MenuItem Header="✏️ Edit" Background="#3A5F5F">
                 <MenuItem Header="📋 Select All" Name="MenuItemEditSelectAll"/>
                 <MenuItem Header="🧹 Clear Selection" Name="MenuItemEditClearSelection"/>
             </MenuItem>
-            
+
             <MenuItem Header="🎨 View" Background="#3A5F5F">
                 <MenuItem Header="🔄 Reset Colors" Name="MenuItemViewResetColors"/>
             </MenuItem>
-            
+
             <MenuItem Header="📐 Layout" Background="#3A5F5F">
                 <MenuItem Header="⭕ Circle Layout" Name="MenuItemLayoutCircle"/>
                 <MenuItem Header="🎲 Random Layout" Name="MenuItemLayoutRandom"/>
             </MenuItem>
-            
+
             <MenuItem Header="⚙️ Algorithms" Background="#3A5F5F">
                 <MenuItem Header="➡️ Dijkstra" Name="MenuItemAlgoDijkstra"/>
                 <MenuItem Header="🌳 MST (Prim)" Name="MenuItemAlgoMST"/>
                 <MenuItem Header="💧 Max Flow" Name="MenuItemAlgoMaxFlow"/>
             </MenuItem>
-            
+
             <MenuItem Header="❓ Help" Background="#3A5F5F">
                 <MenuItem Header="ℹ️ About" Name="MenuItemHelpAbout"/>
             </MenuItem>
         </Menu>
-        
+
         <!-- ФИКСИРОВАННАЯ панель инструментов (без возможности перемещения) -->
         <Grid DockPanel.Dock="Top" Background="#F5F5F5" Height="50">
             <Grid.ColumnDefinitions>
@@ -120,7 +129,7 @@
                 <ColumnDefinition Width="Auto"/>
                 <ColumnDefinition Width="*"/>
             </Grid.ColumnDefinitions>
-            
+
             <!-- Группа 1: Режимы работы - ФИКСИРОВАНА -->
             <Border Grid.Column="0" Background="#FFF8DC" Margin="5,3" Padding="5" 
                     BorderBrush="#DAA520" BorderThickness="1" CornerRadius="3">
@@ -135,7 +144,7 @@
                             VerticalAlignment="Center" Margin="5,0,0,0"/>
                 </StackPanel>
             </Border>
-            
+
             <!-- Группа 2: Добавление элементов - ФИКСИРОВАНА -->
             <Border Grid.Column="1" Background="#F0FFF0" Margin="5,3" Padding="5"
                     BorderBrush="#90EE90" BorderThickness="1" CornerRadius="3">
@@ -150,7 +159,7 @@
                             VerticalAlignment="Center" Margin="5,0,0,0"/>
                 </StackPanel>
             </Border>
-            
+
             <!-- Группа 3: Layout алгоритмы - ФИКСИРОВАНА -->
             <Border Grid.Column="2" Background="#F5F0FF" Margin="5,3" Padding="5"
                     BorderBrush="#DB7093" BorderThickness="1" CornerRadius="3">
@@ -165,7 +174,7 @@
                             VerticalAlignment="Center" Margin="5,0,0,0"/>
                 </StackPanel>
             </Border>
-            
+
             <!-- Группа 4: Утилиты - ФИКСИРОВАНА -->
             <Border Grid.Column="3" Background="#FFF0F5" Margin="5,3" Padding="5"
                     BorderBrush="#FFD700" BorderThickness="1" CornerRadius="3">
@@ -178,88 +187,147 @@
                     <Button Name="BtnDelete" Style="{StaticResource UtilityButton}" 
                             Content="🗑️ Delete" ToolTip="Delete selected element (or press Delete key)"
                             VerticalAlignment="Center" Margin="5,0,0,0"/>
-                    <Separator Width="10" Background="Transparent"/>
-                    <Button Name="BtnAlgorithms" Style="{StaticResource UtilityButton}" 
-                Content="⚡ Algorithms" ToolTip="Run graph algorithms"
-                VerticalAlignment="Center" Margin="5,0,0,0"/>
-                    <Button Name="BtnResetAlgorithm" Style="{StaticResource UtilityButton}" 
-                Content="🔄 Reset View" ToolTip="Reset algorithm visualization"
-                VerticalAlignment="Center" Margin="5,0,0,0"/>
                 </StackPanel>
             </Border>
-            
+
             <!-- Пустое пространство справа -->
             <Border Grid.Column="4" Background="Transparent">
                 <TextBlock Text="Graph Editor" VerticalAlignment="Center" HorizontalAlignment="Right"
                           Margin="0,0,20,0" FontStyle="Italic" Foreground="#708090"/>
             </Border>
         </Grid>
-        
-        <!-- Основная область -->
-        <Grid>
-            <Grid.RowDefinitions>
-                <RowDefinition Height="*"/>
-                <RowDefinition Height="Auto"/>
-            </Grid.RowDefinitions>
-            
-            <!-- Canvas для отрисовки графа с рамкой -->
-            <Border Grid.Row="0" BorderBrush="#C0C0C0" BorderThickness="2" Margin="8" Background="White"
-                    CornerRadius="3">
-                <Canvas Name="GraphCanvas" 
-                        Background="#FAFAFA"
-                        Focusable="True"
-                        FocusVisualStyle="{x:Null}">
-                    <!-- Граф будет отрисован здесь -->
-                </Canvas>
-            </Border>
-            
-            <!-- Улучшенная строка состояния -->
-            <StatusBar Grid.Row="1" Background="#2F4F4F" Foreground="White" Height="28">
-                <!-- Статус -->
-                <StatusBarItem>
-                    <Border Background="#3A5F5F" CornerRadius="3" Padding="6,2" Margin="2">
-                        <TextBlock Name="StatusText" Text="✅ Ready" FontWeight="SemiBold"/>
-                    </Border>
-                </StatusBarItem>
-                
-                <Separator Background="#708090" Width="1" Margin="5,0"/>
-                
-                <!-- Статистика -->
-                <StatusBarItem>
-                    <Border Background="#4682B4" CornerRadius="3" Padding="6,2" Margin="2">
-                        <TextBlock Name="VertexCountText" Text="📌 Vertices: 0" FontWeight="Medium"/>
-                    </Border>
-                </StatusBarItem>
-                
-                <StatusBarItem>
-                    <Border Background="#4682B4" CornerRadius="3" Padding="6,2" Margin="2">
-                        <TextBlock Name="EdgeCountText" Text="➖ Edges: 0" FontWeight="Medium"/>
-                    </Border>
-                </StatusBarItem>
-                
-                <Separator Background="#708090" Width="1" Margin="5,0"/>
-                
-                <!-- Layout статус -->
-                <StatusBarItem>
-                    <Border Background="#5F9EA0" CornerRadius="3" Padding="6,2" Margin="2">
-                        <TextBlock Name="LayoutStatusText" Text="📐 Layout: None" FontWeight="Medium"/>
-                    </Border>
-                </StatusBarItem>
-                
-                <Separator Background="#708090" Width="1" Margin="5,0"/>
-                
-                <!-- Режим работы -->
-                <StatusBarItem>
-                    <Border Background="#D2691E" CornerRadius="3" Padding="6,2" Margin="2">
-                        <TextBlock Name="ModeText" Text="🎯 Mode: Select" FontWeight="Medium"/>
-                    </Border>
-                </StatusBarItem>
-                
-                <!-- Пустое пространство справа -->
-                <StatusBarItem HorizontalAlignment="Right">
-                    <TextBlock Text="Graph Editor v1.0" Opacity="0.7" Margin="10,0" FontSize="11"/>
-                </StatusBarItem>
-            </StatusBar>
-        </Grid>
+
+		<!-- Основная область с матрицей -->
+		<Grid>
+			<Grid.ColumnDefinitions>
+				<ColumnDefinition Width="*"/>
+				<!-- Граф -->
+				<ColumnDefinition Width="5"/>
+				<!-- Разделитель -->
+				<ColumnDefinition Width="400"/>
+				<!-- Матрица -->
+			</Grid.ColumnDefinitions>
+
+			<Grid.RowDefinitions>
+				<RowDefinition Height="*"/>
+				<RowDefinition Height="Auto"/>
+			</Grid.RowDefinitions>
+
+			<!-- Canvas для отрисовки графа с рамкой -->
+			<Border Grid.Column="0" Grid.Row="0"
+					BorderBrush="#C0C0C0" BorderThickness="2" Margin="8"
+					Background="White" CornerRadius="3">
+				<Canvas Name="GraphCanvas"
+						Background="#FAFAFA"
+						Focusable="True"
+						FocusVisualStyle="{x:Null}">
+					<!-- Граф будет отрисован здесь -->
+				</Canvas>
+			</Border>
+
+			<!-- ===== ПРАВАЯ ПАНЕЛЬ С МАТРИЦЕЙ ===== -->
+			<GridSplitter Grid.Column="1" Grid.Row="0" Grid.RowSpan="2"
+						  Width="5" Background="#A0A0A0"
+						  HorizontalAlignment="Stretch" ShowsPreview="True"/>
+
+			<Border Grid.Column="2" Grid.Row="0"
+					Margin="8,8,8,0" BorderBrush="#4682B4" BorderThickness="1"
+					Background="#F8F8FF" CornerRadius="3">
+				<Grid>
+					<Grid.RowDefinitions>
+						<RowDefinition Height="Auto"/>
+						<!-- Заголовок -->
+						<RowDefinition Height="*"/>
+						<!-- Матрица -->
+						<RowDefinition Height="Auto"/>
+						<!-- Кнопки -->
+					</Grid.RowDefinitions>
+
+					<!-- Заголовок панели -->
+					<Border Grid.Row="0" Background="#4682B4" CornerRadius="2,2,0,0"
+							Padding="10,5" Margin="1,1,1,0">
+						<StackPanel Orientation="Horizontal">
+							<TextBlock Text="📊 " FontSize="16" VerticalAlignment="Center"/>
+							<TextBlock Text="Adjacency Matrix"
+									   FontWeight="Bold" Foreground="White"
+									   VerticalAlignment="Center"/>
+						</StackPanel>
+					</Border>
+
+					<!-- Поле для матрицы -->
+					<ScrollViewer Grid.Row="1"
+								  VerticalScrollBarVisibility="Auto"
+								  HorizontalScrollBarVisibility="Auto"
+								  Margin="5">
+						<TextBox x:Name="MatrixTextBox"
+								 FontFamily="Consolas, Courier New"
+								 FontSize="11"
+								 IsReadOnly="True"
+								 TextWrapping="NoWrap"
+								 BorderThickness="0"
+								 Background="Transparent"
+								 VerticalAlignment="Top"
+								 Text="Matrix will appear here..."/>
+					</ScrollViewer>
+
+					<!-- Панель кнопок -->
+					<StackPanel Grid.Row="2" Orientation="Horizontal"
+								HorizontalAlignment="Right" Margin="5">
+						<Button x:Name="BtnCopyMatrix" Content="📋 Copy"
+								Padding="8,3" Margin="0,0,5,0"
+								ToolTip="Copy matrix to clipboard"/>
+						<Button x:Name="BtnRefreshMatrix" Content="🔄 Refresh"
+								Padding="8,3"
+								ToolTip="Refresh matrix"/>
+					</StackPanel>
+				</Grid>
+			</Border>
+			<!-- ===== КОНЕЦ ПРАВОЙ ПАНЕЛИ ===== -->
+
+			<!-- Улучшенная строка состояния -->
+			<StatusBar Grid.Column="0" Grid.ColumnSpan="3" Grid.Row="1"
+					   Background="#2F4F4F" Foreground="White" Height="28">
+				<!-- ... существующий код StatusBar без изменений ... -->
+				<StatusBarItem>
+					<Border Background="#3A5F5F" CornerRadius="3" Padding="6,2" Margin="2">
+						<TextBlock Name="StatusText" Text="✅ Ready" FontWeight="SemiBold"/>
+					</Border>
+				</StatusBarItem>
+
+				<Separator Background="#708090" Width="1" Margin="5,0"/>
+
+				<StatusBarItem>
+					<Border Background="#4682B4" CornerRadius="3" Padding="6,2" Margin="2">
+						<TextBlock Name="VertexCountText" Text="📌 Vertices: 0" FontWeight="Medium"/>
+					</Border>
+				</StatusBarItem>
+
+				<StatusBarItem>
+					<Border Background="#4682B4" CornerRadius="3" Padding="6,2" Margin="2">
+						<TextBlock Name="EdgeCountText" Text="➖ Edges: 0" FontWeight="Medium"/>
+					</Border>
+				</StatusBarItem>
+
+				<Separator Background="#708090" Width="1" Margin="5,0"/>
+
+				<StatusBarItem>
+					<Border Background="#5F9EA0" CornerRadius="3" Padding="6,2" Margin="2">
+						<TextBlock Name="LayoutStatusText" Text="📐 Layout: None" FontWeight="Medium"/>
+					</Border>
+				</StatusBarItem>
+
+				<Separator Background="#708090" Width="1" Margin="5,0"/>
+
+				<StatusBarItem>
+					<Border Background="#D2691E" CornerRadius="3" Padding="6,2" Margin="2">
+						<TextBlock Name="ModeText" Text="🎯 Mode: Select" FontWeight="Medium"/>
+					</Border>
+				</StatusBarItem>
+
+				<StatusBarItem HorizontalAlignment="Right">
+					<TextBlock Text="Graph Editor v1.0" Opacity="0.7" Margin="10,0" FontSize="11"/>
+				</StatusBarItem>
+			</StatusBar>
+		</Grid>
     </DockPanel>
 </Window>
