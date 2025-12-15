@@ -31,6 +31,16 @@
             <Setter Property="Padding" Value="12,4"/>
             <Setter Property="Foreground" Value="White"/>
             <Setter Property="FontSize" Value="12"/>
+            <Setter Property="Background" Value="#3A5F5F"/>
+            <Setter Property="BorderBrush" Value="Transparent"/>
+        </Style>
+
+        <!-- Стиль для выпадающего меню -->
+        <Style TargetType="ContextMenu">
+            <Setter Property="Background" Value="#3A5F5F"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="BorderBrush" Value="#5F9EA0"/>
+            <Setter Property="BorderThickness" Value="1"/>
         </Style>
 
         <Style TargetType="Separator">
