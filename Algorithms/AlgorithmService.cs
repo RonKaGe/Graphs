@@ -38,8 +38,18 @@ namespace GraphEditor.Algorithms
                     RequiresParameters = true,
                     Parameters = new List<AlgorithmParameter>
                     {
-                        new AlgorithmParameter { Name = "Start Vertex", Type = "vertex", IsRequired = true },
-                        new AlgorithmParameter { Name = "Target Vertex", Type = "vertex", IsRequired = false }
+                        new AlgorithmParameter {
+                            Name = "Start Vertex",
+                            Type = "vertex",
+                            IsRequired = true,
+                            DefaultValue = ""
+                        },
+                        new AlgorithmParameter {
+                            Name = "Target Vertex",
+                            Type = "vertex",
+                            IsRequired = false,
+                            DefaultValue = ""
+                        }
                     }
                 },
                 new AlgorithmInfo
@@ -50,8 +60,18 @@ namespace GraphEditor.Algorithms
                     RequiresParameters = true,
                     Parameters = new List<AlgorithmParameter>
                     {
-                        new AlgorithmParameter { Name = "Source", Type = "vertex", IsRequired = true },
-                        new AlgorithmParameter { Name = "Sink", Type = "vertex", IsRequired = true }
+                        new AlgorithmParameter {
+                            Name = "Source",
+                            Type = "vertex",
+                            IsRequired = true,
+                            DefaultValue = ""
+                        },
+                        new AlgorithmParameter {
+                            Name = "Sink",
+                            Type = "vertex",
+                            IsRequired = true,
+                            DefaultValue = ""
+                        }
                     }
                 },
                 new AlgorithmInfo
@@ -59,30 +79,50 @@ namespace GraphEditor.Algorithms
                     Id = "MST",
                     Name = "Minimum Spanning Tree (Kruskal)",
                     Description = "Finds minimum spanning tree",
-                    RequiresParameters = false
+                    RequiresParameters = false,
+                    Parameters = new List<AlgorithmParameter>()
                 }
             };
         }
 
         public AlgorithmResult RunAlgorithm(string algorithmId, Dictionary<string, string> parameters)
         {
+            Console.WriteLine($"=== RunAlgorithm: {algorithmId} ===");
+            Console.WriteLine($"Graph has {_graphModel.Vertices.Count} vertices, {_graphModel.Edges.Count} edges");
+
+            if (parameters != null)
+            {
+                foreach (var param in parameters)
+                {
+                    Console.WriteLine($"  {param.Key}: {param.Value}");
+                }
+            }
 
             try
             {
-                return algorithmId switch
+                // Валидация параметров
+                if (parameters == null)
+                    parameters = new Dictionary<string, string>();
+
+                switch (algorithmId)
                 {
-                    "Dijkstra" => RunDijkstra(parameters),
-                    "MaxFlow" => RunMaxFlow(parameters),
-                    "MST" => RunMST(),
-                    _ => new AlgorithmResult
-                    {
-                        Success = false,
-                        Message = $"Unknown algorithm: {algorithmId}"
-                    }
-                };
+                    case "Dijkstra":
+                        return RunDijkstra(parameters);
+                    case "MaxFlow":
+                        return RunMaxFlow(parameters);
+                    case "MST":
+                        return RunMST();
+                    default:
+                        return new AlgorithmResult
+                        {
+                            Success = false,
+                            Message = $"Unknown algorithm: {algorithmId}"
+                        };
+                }
             }
             catch (Exception ex)
             {
+                Console.WriteLine($"Error in RunAlgorithm: {ex}");
                 return new AlgorithmResult
                 {
                     Success = false,
@@ -93,15 +133,31 @@ namespace GraphEditor.Algorithms
 
         private AlgorithmResult RunDijkstra(Dictionary<string, string> parameters)
         {
+            Console.WriteLine("Running Dijkstra...");
+
             if (!parameters.TryGetValue("Start Vertex", out string startVertex) || string.IsNullOrEmpty(startVertex))
-                return new AlgorithmResult { Success = false, Message = "Start vertex is required" };
+                return new AlgorithmResult
+                {
+                    Success = false,
+                    Message = "Start vertex is required"
+                };
 
             parameters.TryGetValue("Target Vertex", out string targetVertex);
 
+            // Если targetVertex пустой, устанавливаем null
+            if (string.IsNullOrEmpty(targetVertex))
+                targetVertex = null;
+
+            Console.WriteLine($"Start: {startVertex}, Target: {targetVertex ?? "null"}");
+
             var result = _dijkstra.Execute(_graphModel, startVertex, targetVertex);
+
+            Console.WriteLine($"Dijkstra result: Success={result.Success}, Message={result.Message}");
 
             if (result.Success)
             {
+                // Сброс цветов перед визуализацией
+                ResetVisualization();
                 _dijkstra.VisualizeResult(_visualModel, result);
             }
 
@@ -110,16 +166,32 @@ namespace GraphEditor.Algorithms
 
         private AlgorithmResult RunMaxFlow(Dictionary<string, string> parameters)
         {
+            Console.WriteLine("Running MaxFlow...");
+
             if (!parameters.TryGetValue("Source", out string source) || string.IsNullOrEmpty(source))
-                return new AlgorithmResult { Success = false, Message = "Source vertex is required" };
+                return new AlgorithmResult
+                {
+                    Success = false,
+                    Message = "Source vertex is required"
+                };
 
             if (!parameters.TryGetValue("Sink", out string sink) || string.IsNullOrEmpty(sink))
-                return new AlgorithmResult { Success = false, Message = "Sink vertex is required" };
+                return new AlgorithmResult
+                {
+                    Success = false,
+                    Message = "Sink vertex is required"
+                };
+
+            Console.WriteLine($"Source: {source}, Sink: {sink}");
 
             var result = _maxFlow.Execute(_graphModel, source, sink);
 
+            Console.WriteLine($"MaxFlow result: Success={result.Success}, Message={result.Message}");
+
             if (result.Success)
             {
+                // Сброс цветов перед визуализацией
+                ResetVisualization();
                 _maxFlow.VisualizeResult(_visualModel, result);
             }
 
@@ -128,10 +200,16 @@ namespace GraphEditor.Algorithms
 
         private AlgorithmResult RunMST()
         {
+            Console.WriteLine("Running MST...");
+
             var result = _mst.Execute(_graphModel);
+
+            Console.WriteLine($"MST result: Success={result.Success}, Message={result.Message}");
 
             if (result.Success)
             {
+                // Сброс цветов перед визуализацией
+                ResetVisualization();
                 _mst.VisualizeResult(_visualModel, result);
             }
 
@@ -140,7 +218,15 @@ namespace GraphEditor.Algorithms
 
         public void ResetVisualization()
         {
-            _visualModel.ResetColors();
+            try
+            {
+                Console.WriteLine("Resetting visualization...");
+                _visualModel.ResetStyles(Colors.LightBlue, Colors.Black);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error resetting visualization: {ex.Message}");
+            }
         }
     }
 

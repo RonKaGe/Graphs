@@ -1,7 +1,6 @@
 ﻿using GraphEditor.Algorithms;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics.Eventing.Reader;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
@@ -26,19 +25,22 @@ namespace GraphEditor.Views
         {
             InitializeComponent();
 
-            _algorithmService = algorithmService;
-            _availableVertices = availableVertices;
+            _algorithmService = algorithmService ?? throw new ArgumentNullException(nameof(algorithmService));
+            _availableVertices = availableVertices ?? new List<string>();
             Parameters = new Dictionary<string, string>();
             _parameterControls = new Dictionary<string, Control>();
 
             LoadAlgorithms();
+
+            Console.WriteLine($"AlgorithmDialog created with {_availableVertices.Count} available vertices");
+            Console.WriteLine($"Available vertices: {string.Join(", ", _availableVertices)}");
         }
 
         private void InitializeComponent()
         {
-            Title = "Запустить алгоритм";
+            Title = "Run Algorithm";
             Width = 500;
-            Height = 400;
+            Height = 450;
             WindowStartupLocation = WindowStartupLocation.CenterOwner;
             ResizeMode = ResizeMode.NoResize;
 
@@ -50,7 +52,7 @@ namespace GraphEditor.Views
             // Заголовок
             var titleText = new TextBlock
             {
-                Text = "Выберите алгоритм и параметры",
+                Text = "Select Algorithm and Parameters",
                 FontSize = 16,
                 FontWeight = FontWeights.Bold,
                 Margin = new Thickness(0, 0, 0, 10)
@@ -62,6 +64,7 @@ namespace GraphEditor.Views
             var scrollViewer = new ScrollViewer
             {
                 VerticalScrollBarVisibility = ScrollBarVisibility.Auto,
+                HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled,
                 Margin = new Thickness(0, 5, 0, 5)
             };
             var contentPanel = new StackPanel();
@@ -69,13 +72,13 @@ namespace GraphEditor.Views
             // Выбор алгоритма
             var algorithmGroup = new GroupBox
             {
-                Header = "Алгоритм",
+                Header = "Algorithm",
                 Margin = new Thickness(0, 0, 0, 10),
                 Padding = new Thickness(5)
             };
             _comboAlgorithms = new ComboBox
             {
-                DisplayMemberPath = "Name",  // ИСПРАВЛЕНО: должно быть "Name", а не "Имя"
+                DisplayMemberPath = "Name",
                 MinHeight = 30,
                 Margin = new Thickness(2)
             };
@@ -86,7 +89,7 @@ namespace GraphEditor.Views
             // Описание
             var descriptionGroup = new GroupBox
             {
-                Header = "Описание",
+                Header = "Description",
                 Margin = new Thickness(0, 0, 0, 10),
                 Padding = new Thickness(5)
             };
@@ -95,15 +98,15 @@ namespace GraphEditor.Views
                 TextWrapping = TextWrapping.Wrap,
                 MinHeight = 60,
                 Margin = new Thickness(2),
-                Text = "Выберите алгоритм из списка выше"
+                Text = "Select an algorithm from the list above"
             };
             descriptionGroup.Content = _txtDescription;
             contentPanel.Children.Add(descriptionGroup);
 
             // Параметры
-            _parametersGroup = new GroupBox  // ИСПРАВЛЕНО: используем поле
+            _parametersGroup = new GroupBox
             {
-                Header = "Параметры",
+                Header = "Parameters",
                 Margin = new Thickness(0, 0, 0, 10),
                 Padding = new Thickness(5),
                 Visibility = Visibility.Collapsed
@@ -126,7 +129,7 @@ namespace GraphEditor.Views
 
             var runButton = new Button
             {
-                Content = "Запустить",  // ИСПРАВЛЕНО: русский текст
+                Content = "Run",
                 IsDefault = true,
                 Width = 100,
                 Height = 30,
@@ -137,7 +140,7 @@ namespace GraphEditor.Views
 
             var cancelButton = new Button
             {
-                Content = "Отмена",  // ИСПРАВЛЕНО: русский текст
+                Content = "Cancel",
                 IsCancel = true,
                 Width = 100,
                 Height = 30,
@@ -161,10 +164,12 @@ namespace GraphEditor.Views
                 if (algo.Id == algorithmId)
                 {
                     _comboAlgorithms.SelectedItem = algo;
+                    Console.WriteLine($"Selected algorithm: {algorithmId}");
                     break;
                 }
             }
         }
+
         private void LoadAlgorithms()
         {
             var algorithms = _algorithmService.GetAvailableAlgorithms();
@@ -173,6 +178,11 @@ namespace GraphEditor.Views
             if (algorithms.Count > 0)
             {
                 _comboAlgorithms.SelectedIndex = 0;
+                Console.WriteLine($"Loaded {algorithms.Count} algorithms");
+            }
+            else
+            {
+                Console.WriteLine("No algorithms available!");
             }
         }
 
@@ -183,35 +193,35 @@ namespace GraphEditor.Views
                 SelectedAlgorithm = algorithm;
                 _txtDescription.Text = algorithm.Description;
 
+                Console.WriteLine($"Algorithm selected: {algorithm.Name}");
+                Console.WriteLine($"Requires parameters: {algorithm.RequiresParameters}");
+                Console.WriteLine($"Parameter count: {algorithm.Parameters?.Count ?? 0}");
+
                 // Очищаем панель параметров
                 _parametersPanel.Children.Clear();
                 _parameterControls.Clear();
                 Parameters.Clear();
 
-                // НАХОДИМ GroupBox по Header (один раз и сохраняем в переменную)
-                var parametersGroupBox = (Content as Grid)?.Children
-                    .OfType<GroupBox>()
-                    .FirstOrDefault(g => g.Header?.ToString() == "Параметры");
-
-                if (algorithm.RequiresParameters && algorithm.Parameters != null)
+                if (algorithm.RequiresParameters && algorithm.Parameters != null && algorithm.Parameters.Count > 0)
                 {
-                    //  используем найденный GroupBox
-                    if (parametersGroupBox != null)
-                        parametersGroupBox.Visibility = Visibility.Visible;
+                    _parametersGroup.Visibility = Visibility.Visible;
 
-                    int vertexParamIndex = 0; // Счётчик для параметров-вершин
+                    Console.WriteLine($"Available vertices: {string.Join(", ", _availableVertices)}");
 
                     foreach (var param in algorithm.Parameters)
                     {
+                        Console.WriteLine($"Creating parameter: {param.Name}, Type: {param.Type}, Required: {param.IsRequired}");
+
                         var grid = new Grid();
-                        grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(100) });
+                        grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(120) });
                         grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
 
                         var label = new TextBlock
                         {
                             Text = param.Name + (param.IsRequired ? " *" : ""),
                             VerticalAlignment = VerticalAlignment.Center,
-                            Margin = new Thickness(5)
+                            Margin = new Thickness(5, 8, 5, 8),
+                            FontWeight = param.IsRequired ? FontWeights.Bold : FontWeights.Normal
                         };
                         Grid.SetColumn(label, 0);
 
@@ -222,37 +232,29 @@ namespace GraphEditor.Views
                             var comboBox = new ComboBox
                             {
                                 ItemsSource = _availableVertices,
-                                Margin = new Thickness(5)
+                                Margin = new Thickness(5, 5, 5, 5),
+                                MinHeight = 28
                             };
 
-                            // ВЫБИРАЕМ РАЗНЫЕ ВЕРШИНЫ ДЛЯ РАЗНЫХ ПАРАМЕТРОВ
-                            if (vertexParamIndex == 0 && _availableVertices.Count > 0)
+                            // Выбираем значение по умолчанию
+                            if (!string.IsNullOrEmpty(param.DefaultValue) && _availableVertices.Contains(param.DefaultValue))
                             {
-                                // Первый параметр-вершина: выбираем первую вершину
-                                comboBox.SelectedItem = _availableVertices[0];
-                            }
-                            else if (vertexParamIndex == 1 && _availableVertices.Count > 1)
-                            {
-                                // Второй параметр-вершина: выбираем вторую вершину
-                                comboBox.SelectedItem = _availableVertices[1];
-                            }
-                            else if (vertexParamIndex >= 2 && _availableVertices.Count > vertexParamIndex)
-                            {
-                                // Третий и далее: выбираем по порядку
-                                comboBox.SelectedItem = _availableVertices[vertexParamIndex];
-                            }
-                            else if (param.DefaultValue != null)
-                            {
-                                // Или используем значение по умолчанию
                                 comboBox.SelectedItem = param.DefaultValue;
                             }
                             else if (_availableVertices.Count > 0)
                             {
-                                // Или просто первую
-                                comboBox.SelectedItem = _availableVertices[0];
+                                // Автоматически выбираем первую доступную вершину
+                                comboBox.SelectedIndex = 0;
                             }
 
-                            vertexParamIndex++;
+                            comboBox.SelectionChanged += (s, ev) =>
+                            {
+                                if (comboBox.SelectedItem != null)
+                                {
+                                    Console.WriteLine($"Parameter {param.Name} set to: {comboBox.SelectedItem}");
+                                }
+                            };
+
                             inputControl = comboBox;
                         }
                         else
@@ -260,8 +262,10 @@ namespace GraphEditor.Views
                             var textBox = new TextBox
                             {
                                 Text = param.DefaultValue ?? "",
-                                Margin = new Thickness(5)
+                                Margin = new Thickness(5, 5, 5, 5),
+                                MinHeight = 28
                             };
+
                             inputControl = textBox;
                         }
 
@@ -276,16 +280,17 @@ namespace GraphEditor.Views
                 }
                 else
                 {
-                    //  скрываем найденный GroupBox
-                    if (parametersGroupBox != null)
-                        parametersGroupBox.Visibility = Visibility.Collapsed;
+                    _parametersGroup.Visibility = Visibility.Collapsed;
                 }
             }
         }
 
         private void BtnRun_Click(object sender, RoutedEventArgs e)
         {
+            Console.WriteLine("Run button clicked");
+
             // Собираем параметры
+            Parameters.Clear();
             foreach (var kvp in _parameterControls)
             {
                 string value = "";
@@ -293,10 +298,12 @@ namespace GraphEditor.Views
                 if (kvp.Value is ComboBox comboBox)
                 {
                     value = comboBox.SelectedItem?.ToString() ?? "";
+                    Console.WriteLine($"Parameter {kvp.Key} (ComboBox): {value}");
                 }
                 else if (kvp.Value is TextBox textBox)
                 {
-                    value = textBox.Text;
+                    value = textBox.Text ?? "";
+                    Console.WriteLine($"Parameter {kvp.Key} (TextBox): {value}");
                 }
 
                 Parameters[kvp.Key] = value;
@@ -307,16 +314,19 @@ namespace GraphEditor.Views
             {
                 foreach (var param in SelectedAlgorithm.Parameters)
                 {
-                    if (param.IsRequired &&
-                        (!Parameters.ContainsKey(param.Name) || string.IsNullOrEmpty(Parameters[param.Name])))
+                    if (param.IsRequired)
                     {
-                        MessageBox.Show($"Параметр '{param.Name}' требуется",
-                            "Ошибка проверки", MessageBoxButton.OK, MessageBoxImage.Error);
-                        return;
+                        if (!Parameters.ContainsKey(param.Name) || string.IsNullOrEmpty(Parameters[param.Name]))
+                        {
+                            MessageBox.Show($"Parameter '{param.Name}' is required",
+                                "Validation Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                            return;
+                        }
                     }
                 }
             }
 
+            Console.WriteLine($"All parameters validated. Selected algorithm: {SelectedAlgorithm?.Id}");
             DialogResult = true;
             Close();
         }

@@ -5,6 +5,8 @@ using GraphEditor.Services;
 using GraphEditor.Visual;
 using Microsoft.Win32;
 using System;
+using System.IO;
+using System.Linq;
 using System.Windows;
 using System.Windows.Input;
 using System.Windows.Media;
@@ -19,142 +21,8 @@ namespace GraphEditor
         private readonly ObservableGraphModel _graphModel;
         private readonly GraphVisualModel _visualModel;
         private readonly ContextMenuService _contextMenuService;
-
         private readonly AlgorithmService _algorithmService;
-
-
-        /////
         private readonly MatrixService _matrixService = new MatrixService();
-        ///////
-
-
-
-
-
-
-
-
-
-
-
-
-        // === МЕТОДЫ ДЛЯ МАТРИЦЫ ===
-
-        private void InitializeMatrixPanel()
-        {
-            try
-            {
-                // Подписываемся на события для обновления матрицы
-                _graphModel.Changed += OnGraphChangedForMatrix;
-                _visualModel.VisualChanged += OnGraphChangedForMatrix;
-
-                // Обработчики кнопок
-                BtnCopyMatrix.Click += (s, e) => CopyMatrixToClipboard();
-                BtnRefreshMatrix.Click += (s, e) => UpdateMatrixDisplay();
-
-                // Первоначальное обновление
-                UpdateMatrixDisplay();
-
-                Console.WriteLine("Matrix panel initialized successfully");
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Error initializing matrix panel: {ex.Message}");
-                MatrixTextBox.Text = $"Error: {ex.Message}";
-            }
-        }
-        private void OnGraphChangedForMatrix(object sender, EventArgs e)
-        {
-            // Обновляем матрицу в UI потоке
-            Dispatcher.Invoke(() => UpdateMatrixDisplay());
-        }
-        private void UpdateMatrixDisplay()
-        {
-            try
-            {
-                if (_graphModel.Vertices.Count == 0)
-                {
-                    MatrixTextBox.Text = "Graph is empty.\nAdd vertices to see the matrix.";
-                    return;
-                }
-
-                // Строим матрицу смежности (без весов для простоты)
-                var matrix = _graphModel.BuildAdjacencyMatrix(false);
-
-                // Форматируем матрицу
-                var matrixText = _matrixService.FormatAdjacencyMatrix(matrix, _graphModel);
-
-                // Добавляем информацию о вершинах
-                var vertexInfo = BuildVertexIndexInfo();
-
-                MatrixTextBox.Text = vertexInfo + "\n\n" + matrixText;
-            }
-            catch (Exception ex)
-            {
-                MatrixTextBox.Text = $"Error building matrix:\n{ex.Message}\n\n{ex.StackTrace}";
-            }
-        }
-        private string BuildVertexIndexInfo()
-        {
-            try
-            {
-                var vertices = _graphModel.Vertices.Keys.OrderBy(id => id).ToList();
-                if (vertices.Count == 0) return "";
-
-                var sb = new System.Text.StringBuilder();
-
-                sb.AppendLine("=== VERTEX INDEX MAPPING ===");
-                sb.AppendLine("Rows and columns correspond to:");
-                sb.AppendLine();
-
-                for (int i = 0; i < vertices.Count; i++)
-                {
-                    sb.AppendLine($"  Row/Col {i + 1,2} → Vertex '{vertices[i]}'");
-                }
-
-                return sb.ToString();
-            }
-            catch (Exception ex)
-            {
-                return $"Error building vertex info: {ex.Message}";
-            }
-        }
-        private void CopyMatrixToClipboard()
-        {
-            try
-            {
-                if (string.IsNullOrEmpty(MatrixTextBox.Text))
-                {
-                    MessageBox.Show("Matrix is empty", "Info",
-                        MessageBoxButton.OK, MessageBoxImage.Information);
-                    return;
-                }
-
-                System.Windows.Clipboard.SetText(MatrixTextBox.Text);
-                StatusText.Text = "Matrix copied to clipboard!";
-
-                // Визуальная обратная связь
-                BtnCopyMatrix.Content = "✓ Copied!";
-
-                // Через секунду возвращаем обратно
-                System.Threading.Tasks.Task.Delay(1000).ContinueWith(_ =>
-                {
-                    Dispatcher.Invoke(() => BtnCopyMatrix.Content = "📋 Copy");
-                });
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show($"Failed to copy matrix:\n{ex.Message}", "Error",
-                    MessageBoxButton.OK, MessageBoxImage.Error);
-            }
-        }
-
-
-
-
-
-
-
 
         // Поля для обработки двойного клика
         private DateTime _lastClickTime = DateTime.MinValue;
@@ -177,90 +45,135 @@ namespace GraphEditor
             _commandService = new CommandService(_graphModel, _visualModel);
             _interactionService = new InteractionService(GraphCanvas, _graphModel, _visualModel);
             _contextMenuService = new ContextMenuService(_commandService, _graphModel);
-
             _algorithmService = new AlgorithmService(_graphModel, _visualModel);
+
             // ДОБАВЬТЕ ЭТИ СТРОКИ ДЛЯ ПОДПИСКИ НА СОБЫТИЯ МЫШИ:
             GraphCanvas.MouseRightButtonDown += OnCanvasRightButtonDown;
             GraphCanvas.MouseLeftButtonDown += OnCanvasMouseDown;
             GraphCanvas.MouseMove += OnCanvasMouseMove;
             GraphCanvas.MouseLeftButtonUp += OnCanvasMouseUp;
             GraphCanvas.PreviewKeyDown += OnCanvasKeyDown;
+
             // Подписка на события из ContextMenuService
             _contextMenuService.StartEdgeFromVertexRequested += StartEdgeFromVertex;
 
             // Настройка событий
             SetupEventHandlers();
 
-            // ===== ИНИЦИАЛИЗАЦИЯ МАТРИЦЫ =====
+            // ИНИЦИАЛИЗАЦИЯ МАТРИЦЫ
             InitializeMatrixPanel();
 
             // Первая отрисовка
             RedrawGraph();
             UpdateStatus();
+
+            Console.WriteLine("MainWindow initialized successfully");
+            Console.WriteLine($"Graph has {_graphModel.Vertices.Count} vertices and {_graphModel.Edges.Count} edges");
         }
-
-
-
-
-
-
-
-
-
-
-
-
-
 
         private void InitializeTestGraph()
         {
-            _graphModel.AddVertex("A", "Vertex A");
-            _graphModel.AddVertex("B", "Vertex B");
-            _graphModel.AddVertex("C", "Vertex C");
-            _graphModel.AddVertex("D", "Vertex D");
-            _graphModel.AddVertex("E", "Vertex E");
+            try
+            {
+                Console.WriteLine("Initializing test graph...");
 
-            _graphModel.AddEdge("AB", "A", "B", 5.0, 10.0); // weight=5, capacity=10
-            _graphModel.AddEdge("BC", "B", "C", 3.0, 8.0);
-            _graphModel.AddEdge("CD", "C", "D", 7.0, 15.0);
-            _graphModel.AddEdge("DE", "D", "E", 2.0, 5.0);
-            _graphModel.AddEdge("EA", "E", "A", 4.0, 12.0);
+                _graphModel.AddVertex("A", "Vertex A");
+                _graphModel.AddVertex("B", "Vertex B");
+                _graphModel.AddVertex("C", "Vertex C");
+                _graphModel.AddVertex("D", "Vertex D");
+                _graphModel.AddVertex("E", "Vertex E");
 
-            // Добавим ещё рёбра для лучшего тестирования
-            _graphModel.AddEdge("AC", "A", "C", 6.0, 7.0);
-            _graphModel.AddEdge("BD", "B", "D", 4.0, 9.0);
+                _graphModel.AddEdge("AB", "A", "B", 5.0, 10.0); // weight=5, capacity=10
+                _graphModel.AddEdge("BC", "B", "C", 3.0, 8.0);
+                _graphModel.AddEdge("CD", "C", "D", 7.0, 15.0);
+                _graphModel.AddEdge("DE", "D", "E", 2.0, 5.0);
+                _graphModel.AddEdge("EA", "E", "A", 4.0, 12.0);
+
+                // Добавим ещё рёбра для лучшего тестирования
+                _graphModel.AddEdge("AC", "A", "C", 6.0, 7.0);
+                _graphModel.AddEdge("BD", "B", "D", 4.0, 9.0);
+
+                Console.WriteLine("Test graph initialized");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error initializing test graph: {ex.Message}");
+            }
         }
 
         private void ShowAlgorithmDialog()
         {
-            var dialog = new AlgorithmDialog(_algorithmService, _graphModel.Vertices.Keys.ToList());
-            dialog.Owner = this;
-
-            if (dialog.ShowDialog() == true && dialog.SelectedAlgorithm != null)
+            try
             {
-                // 1. Сбросить цвета перед новым алгоритмом
-                _visualModel.ResetColors();
+                // Получаем список доступных вершин
+                var availableVertices = _graphModel.Vertices.Keys.ToList();
 
-                // 2. Выполнить алгоритм
-                var result = _algorithmService.RunAlgorithm(dialog.SelectedAlgorithm.Id, dialog.Parameters);
-
-                // 3. Сразу перерисовать граф (ДО MessageBox!)
-                RedrawGraph();
-
-                // 4. Обновить статус
-                UpdateStatus();
-
-                // 5. Показать результат
-                if (result.Success)
+                if (availableVertices.Count == 0)
                 {
-                    MessageBox.Show(result.Message, "Algorithm Result",
+                    MessageBox.Show("No vertices in graph. Add vertices first.", "Info",
                         MessageBoxButton.OK, MessageBoxImage.Information);
+                    return;
+                }
+
+                Console.WriteLine($"Showing algorithm dialog. Available vertices: {string.Join(", ", availableVertices)}");
+
+                var dialog = new AlgorithmDialog(_algorithmService, availableVertices);
+                dialog.Owner = this;
+                dialog.WindowStartupLocation = WindowStartupLocation.CenterOwner;
+
+                if (dialog.ShowDialog() == true && dialog.SelectedAlgorithm != null)
+                {
+                    Console.WriteLine($"Algorithm selected: {dialog.SelectedAlgorithm.Id}");
+                    Console.WriteLine($"Parameters: {string.Join(", ", dialog.Parameters.Select(p => $"{p.Key}={p.Value}"))}");
+
+                    // 1. Сбросить цвета перед новым алгоритмом
+                    ResetAlgorithmVisualization();
+
+                    // 2. Выполнить алгоритм
+                    var result = _algorithmService.RunAlgorithm(dialog.SelectedAlgorithm.Id, dialog.Parameters);
+
+                    // 3. Сразу перерисовать граф (ДО MessageBox!)
+                    RedrawGraph();
+                    UpdateStatus();
+
+                    // 4. Показать результат
+                    if (result.Success)
+                    {
+                        MessageBox.Show(result.Message, "Algorithm Result",
+                            MessageBoxButton.OK, MessageBoxImage.Information);
+                    }
+                    else
+                    {
+                        MessageBox.Show(result.Message, "Algorithm Error",
+                            MessageBoxButton.OK, MessageBoxImage.Error);
+                    }
                 }
                 else
                 {
-                    MessageBox.Show(result.Message, "Algorithm Error",
-                        MessageBoxButton.OK, MessageBoxImage.Error);
+                    Console.WriteLine("Algorithm dialog cancelled");
                 }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error in ShowAlgorithmDialog: {ex}");
+                MessageBox.Show($"Error showing algorithm dialog:\n{ex.Message}", "Error",
+                    MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+        private void ResetAlgorithmVisualization()
+        {
+            try
+            {
+                Console.WriteLine("Resetting algorithm visualization...");
+                _algorithmService.ResetVisualization();
+                RedrawGraph();
+                UpdateStatus();
+                StatusText.Text = "Algorithm visualization reset";
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error resetting algorithm visualization: {ex.Message}");
             }
         }
 
@@ -283,21 +196,6 @@ namespace GraphEditor
             _commandService.ErrorOccurred += OnErrorOccurred;
             _commandService.VisualChanged += OnVisualChanged;
 
-            // Обработчики кнопок
-            //BtnAlgorithms.Click += (s, e) => ShowAlgorithmDialog();
-            //BtnResetAlgorithm.Click += (s, e) =>
-            {
-                _visualModel.ResetColors();
-                StatusText.Text = "Сброс визуализации алгоритма";
-            };
-
-            // === Canvas события ===
-            GraphCanvas.MouseLeftButtonDown += OnCanvasMouseDown;
-            GraphCanvas.MouseMove += OnCanvasMouseMove;
-            GraphCanvas.MouseLeftButtonUp += OnCanvasMouseUp;
-            GraphCanvas.MouseRightButtonDown += OnCanvasRightButtonDown;
-            GraphCanvas.PreviewKeyDown += OnCanvasKeyDown;
-
             // === События графа ===
             _graphModel.Changed += OnGraphChanged;
 
@@ -311,6 +209,10 @@ namespace GraphEditor
             BtnRandomLayout.Click += (s, e) => _commandService.ApplyRandomLayout();
             BtnResetColors.Click += (s, e) => _commandService.ResetColors();
             BtnDelete.Click += (s, e) => DeleteSelected();
+
+            // === АЛГОРИТМЫ: ОБРАБОТЧИКИ КНОПОК ===
+            //BtnAlgorithms.Click += (s, e) => ShowAlgorithmDialog();
+            //BtnResetAlgorithm.Click += (s, e) => ResetAlgorithmVisualization();
 
             // === Обработчики меню ===
             MenuItemLayoutCircle.Click += (s, e) => _commandService.ApplyCircleLayout();
@@ -327,9 +229,9 @@ namespace GraphEditor
             MenuItemAlgoDijkstra.Click += (s, e) => ShowAlgorithmDialog();
             MenuItemAlgoMST.Click += (s, e) => ShowAlgorithmDialog();
             MenuItemAlgoMaxFlow.Click += (s, e) => ShowAlgorithmDialog();
+
+            Console.WriteLine("Event handlers setup complete");
         }
-
-
 
         // === Обработчики событий Canvas ===
 
@@ -582,17 +484,8 @@ namespace GraphEditor
 
         private void RedrawGraph()
         {
-            Console.WriteLine($"RedrawGraph: {_graphModel.Vertices.Count} вершин, {_graphModel.Edges.Count} рёбер");
-
-            // Проверим цвета в visualModel
-            Console.WriteLine("Цвета вершин в visualModel:");
-            foreach (var vertex in _graphModel.Vertices.Values)
-            {
-                var color = _visualModel.VertexColors.ContainsKey(vertex.Id)
-                    ? _visualModel.VertexColors[vertex.Id]
-                    : Colors.LightBlue;
-                Console.WriteLine($"  {vertex.Id}: {color}");
-            }
+            Console.WriteLine($"=== RedrawGraph ===");
+            Console.WriteLine($"Vertices: {_graphModel.Vertices.Count}, Edges: {_graphModel.Edges.Count}");
 
             GraphCanvas.Children.Clear();
 
@@ -607,6 +500,8 @@ namespace GraphEditor
             {
                 DrawVertex(vertex);
             }
+
+            Console.WriteLine("RedrawGraph complete");
         }
 
         private void DrawVertex(IVertex vertex)
@@ -623,7 +518,8 @@ namespace GraphEditor
                 Fill = new SolidColorBrush(color),
                 Stroke = Brushes.Black,
                 StrokeThickness = 2,
-                Tag = vertex.Id
+                Tag = vertex.Id,
+                ToolTip = $"{vertex.Id}\nPosition: ({position.X:F0}, {position.Y:F0})"
             };
 
             System.Windows.Controls.Canvas.SetLeft(ellipse, position.X - 20);
@@ -660,7 +556,10 @@ namespace GraphEditor
                 Y2 = targetPos.Y,
                 Stroke = new SolidColorBrush(color),
                 StrokeThickness = 2,
-                Tag = edge.Id
+                Tag = edge.Id,
+                ToolTip = $"Edge {edge.Id}\n{edge.Source} → {edge.Target}\n" +
+                         $"Weight: {edge.Weight ?? 1.0:F2}\n" +
+                         $"Capacity: {edge.Capacity ?? 1.0:F2}"
             };
 
             GraphCanvas.Children.Add(line);
@@ -691,6 +590,9 @@ namespace GraphEditor
             VertexCountText.Text = $"Vertices: {_graphModel.Vertices.Count}";
             EdgeCountText.Text = $"Edges: {_graphModel.Edges.Count}";
             ModeText.Text = $"Mode: {_interactionService.GetCurrentMode()}";
+
+            // Обновляем матрицу при изменении графа
+            UpdateMatrixDisplay();
         }
 
         private void DeleteSelected()
@@ -720,14 +622,22 @@ namespace GraphEditor
         {
             var dialog = new OpenFileDialog
             {
-                Filter = "Text files (*.txt)|*.txt|All files (*.*)|*.*",
-                DefaultExt = ".txt",
+                Filter = "Graph files (*.graph)|*.graph|JSON files (*.json)|*.json|All files (*.*)|*.*",
+                DefaultExt = ".graph",
                 Title = "Open Graph"
             };
 
             if (dialog.ShowDialog() == true)
             {
-                _commandService.LoadGraph(dialog.FileName);
+                try
+                {
+                    _commandService.LoadGraph(dialog.FileName);
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show($"Error loading graph:\n{ex.Message}", "Error",
+                        MessageBoxButton.OK, MessageBoxImage.Error);
+                }
             }
         }
 
@@ -735,21 +645,151 @@ namespace GraphEditor
         {
             var dialog = new SaveFileDialog
             {
-                Filter = "Text files (*.txt)|*.txt|All files (*.*)|*.*",
-                DefaultExt = ".txt",
+                Filter = "Graph files (*.graph)|*.graph|JSON files (*.json)|*.json|All files (*.*)|*.*",
+                DefaultExt = ".graph",
                 Title = "Save Graph"
             };
 
             if (dialog.ShowDialog() == true)
             {
-                _commandService.SaveGraph(dialog.FileName);
+                try
+                {
+                    _commandService.SaveGraph(dialog.FileName);
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show($"Error saving graph:\n{ex.Message}", "Error",
+                        MessageBoxButton.OK, MessageBoxImage.Error);
+                }
             }
         }
 
         private void ShowAbout()
         {
-            MessageBox.Show("Graph Editor v1.0\nA simple graph visualization and editing tool",
+            MessageBox.Show("Graph Editor v1.0\nA simple graph visualization and editing tool\n\n" +
+                          "Features:\n" +
+                          "• Create and edit graphs\n" +
+                          "• Visualize with different layouts\n" +
+                          "• Run algorithms (Dijkstra, MST, Max Flow)\n" +
+                          "• Save/load graphs to JSON format\n" +
+                          "• View adjacency matrix",
                 "About", MessageBoxButton.OK, MessageBoxImage.Information);
+        }
+
+        // === МЕТОДЫ ДЛЯ МАТРИЦЫ ===
+
+        private void InitializeMatrixPanel()
+        {
+            try
+            {
+                // Подписываемся на события для обновления матрицы
+                _graphModel.Changed += OnGraphChangedForMatrix;
+                _visualModel.VisualChanged += OnGraphChangedForMatrix;
+
+                // Обработчики кнопок
+                BtnCopyMatrix.Click += (s, e) => CopyMatrixToClipboard();
+                BtnRefreshMatrix.Click += (s, e) => UpdateMatrixDisplay();
+
+                // Первоначальное обновление
+                UpdateMatrixDisplay();
+
+                Console.WriteLine("Matrix panel initialized successfully");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error initializing matrix panel: {ex.Message}");
+                MatrixTextBox.Text = $"Error: {ex.Message}";
+            }
+        }
+
+        private void OnGraphChangedForMatrix(object sender, EventArgs e)
+        {
+            // Обновляем матрицу в UI потоке
+            Dispatcher.Invoke(() => UpdateMatrixDisplay());
+        }
+
+        private void UpdateMatrixDisplay()
+        {
+            try
+            {
+                if (_graphModel.Vertices.Count == 0)
+                {
+                    MatrixTextBox.Text = "Graph is empty.\nAdd vertices to see the matrix.";
+                    return;
+                }
+
+                // Строим матрицу смежности
+                var matrix = _graphModel.BuildAdjacencyMatrix(true);
+
+                // Форматируем матрицу
+                var matrixText = _matrixService.FormatAdjacencyMatrix(matrix, _graphModel);
+
+                // Добавляем информацию о вершинах
+                var vertexInfo = BuildVertexIndexInfo();
+
+                MatrixTextBox.Text = vertexInfo + "\n\n" + matrixText;
+            }
+            catch (Exception ex)
+            {
+                MatrixTextBox.Text = $"Error building matrix:\n{ex.Message}";
+                Console.WriteLine($"Error in UpdateMatrixDisplay: {ex}");
+            }
+        }
+
+        private string BuildVertexIndexInfo()
+        {
+            try
+            {
+                var vertices = _graphModel.Vertices.Keys.OrderBy(id => id).ToList();
+                if (vertices.Count == 0) return "";
+
+                var sb = new System.Text.StringBuilder();
+
+                sb.AppendLine("=== VERTEX INDEX MAPPING ===");
+                sb.AppendLine("Rows and columns correspond to:");
+                sb.AppendLine();
+
+                for (int i = 0; i < vertices.Count; i++)
+                {
+                    sb.AppendLine($"  Row/Col {i + 1,2} → Vertex '{vertices[i]}'");
+                }
+
+                return sb.ToString();
+            }
+            catch (Exception ex)
+            {
+                return $"Error building vertex info: {ex.Message}";
+            }
+        }
+
+        private void CopyMatrixToClipboard()
+        {
+            try
+            {
+                if (string.IsNullOrEmpty(MatrixTextBox.Text))
+                {
+                    MessageBox.Show("Matrix is empty", "Info",
+                        MessageBoxButton.OK, MessageBoxImage.Information);
+                    return;
+                }
+
+                System.Windows.Clipboard.SetText(MatrixTextBox.Text);
+                StatusText.Text = "Matrix copied to clipboard!";
+
+                // Визуальная обратная связь
+                BtnCopyMatrix.Content = "✓ Copied!";
+
+                // Через секунду возвращаем обратно
+                System.Threading.Tasks.Task.Delay(1000).ContinueWith(_ =>
+                {
+                    Dispatcher.Invoke(() => BtnCopyMatrix.Content = "📋 Copy");
+                });
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Failed to copy matrix:\n{ex.Message}", "Error",
+                    MessageBoxButton.OK, MessageBoxImage.Error);
+            }
         }
     }
 

@@ -15,30 +15,41 @@ namespace GraphEditor.Algorithms
 
             try
             {
+                Console.WriteLine($"=== Dijkstra.Execute ===");
+                Console.WriteLine($"Start: {startVertexId}, End: {endVertexId ?? "null"}");
+                Console.WriteLine($"Graph vertices: {string.Join(", ", graph.Vertices.Keys)}");
+
                 // 1. Валидация
                 if (!graph.Vertices.ContainsKey(startVertexId))
                 {
                     result.Success = false;
-                    result.Message = $"Start vertex '{startVertexId}' not found";
+                    result.Message = $"Start vertex '{startVertexId}' not found. Available vertices: {string.Join(", ", graph.Vertices.Keys)}";
                     return result;
                 }
 
                 if (endVertexId != null && !graph.Vertices.ContainsKey(endVertexId))
                 {
                     result.Success = false;
-                    result.Message = $"End vertex '{endVertexId}' not found";
+                    result.Message = $"End vertex '{endVertexId}' not found. Available vertices: {string.Join(", ", graph.Vertices.Keys)}";
                     return result;
                 }
 
                 // 2. Проверка на отрицательные веса
+                bool hasNegativeWeight = false;
                 foreach (var edge in graph.Edges.Values)
                 {
                     if (edge.Weight.HasValue && edge.Weight.Value < 0)
                     {
-                        result.Success = false;
-                        result.Message = "Graph contains negative edge weights. Dijkstra cannot handle them.";
-                        return result;
+                        hasNegativeWeight = true;
+                        break;
                     }
+                }
+
+                if (hasNegativeWeight)
+                {
+                    result.Success = false;
+                    result.Message = "Graph contains negative edge weights. Dijkstra cannot handle them.";
+                    return result;
                 }
 
                 // 3. Выполнение алгоритма с сохранением предков
@@ -48,22 +59,27 @@ namespace GraphEditor.Algorithms
                 result.Success = true;
                 result.Data["distances"] = distances;
                 result.Data["previous"] = previous;
-                result.Data["startVertex"] = startVertexId;  // ДОБАВЛЕНО!
+                result.Data["startVertex"] = startVertexId;
+                result.Data["hasPathToAll"] = distances.All(d => d.Value < double.PositiveInfinity);
 
                 if (endVertexId != null)
                 {
-                    result.Data["endVertex"] = endVertexId;  // ДОБАВЛЕНО!
+                    result.Data["endVertex"] = endVertexId;
 
                     if (distances.ContainsKey(endVertexId) && distances[endVertexId] < double.PositiveInfinity)
                     {
                         // Находим путь используя информацию о предках
                         var path = ReconstructPath(previous, startVertexId, endVertexId);
-                        if (path != null)
+                        if (path != null && path.Count > 0)
                         {
                             result.Data["path"] = path;
-                            result.Data["edges"] = GetPathEdges(graph, path);
+
+                            // Получаем рёбра пути
+                            var pathEdges = GetPathEdges(graph, path);
+                            result.Data["edges"] = pathEdges;
+
                             result.Message = $"Shortest path from '{startVertexId}' to '{endVertexId}': " +
-                                           $"{string.Join(" → ", path)} (distance: {distances[endVertexId]})";
+                                           $"{string.Join(" → ", path)} (distance: {distances[endVertexId]:F2})";
                         }
                         else
                         {
@@ -72,18 +88,31 @@ namespace GraphEditor.Algorithms
                     }
                     else
                     {
-                        result.Message = $"No path found from '{startVertexId}' to '{endVertexId}'";
+                        result.Message = $"No path found from '{startVertexId}' to '{endVertexId}' (distance: ∞)";
                     }
                 }
                 else
                 {
-                    result.Message = $"Calculated distances from '{startVertexId}' to all vertices";
+                    // Вычисляем расстояния до всех вершин
+                    var reachableVertices = distances
+                        .Where(d => d.Value < double.PositiveInfinity && d.Key != startVertexId)
+                        .ToList();
+
+                    if (reachableVertices.Count > 0)
+                    {
+                        result.Message = $"Distances from '{startVertexId}':\n" +
+                                       string.Join("\n", reachableVertices.Select(v => $"  to '{v.Key}': {v.Value:F2}"));
+                    }
+                    else
+                    {
+                        result.Message = $"No reachable vertices from '{startVertexId}'";
+                    }
                 }
             }
             catch (Exception ex)
             {
                 result.Success = false;
-                result.Message = $"Error executing Dijkstra: {ex.Message}";
+                result.Message = $"Error executing Dijkstra: {ex.Message}\n{ex.StackTrace}";
             }
 
             return result;
@@ -125,7 +154,8 @@ namespace GraphEditor.Algorithms
                 visited.Add(currentVertex);
 
                 // Обходим соседей
-                foreach (var neighborId in graph.GetNeighbors(currentVertex))
+                var neighbors = graph.GetNeighbors(currentVertex);
+                foreach (var neighborId in neighbors)
                 {
                     if (visited.Contains(neighborId))
                         continue;
@@ -135,7 +165,14 @@ namespace GraphEditor.Algorithms
                     var edge = FindEdgeBetween(graph, currentVertex, neighborId);
 
                     if (edge != null && edge.Weight.HasValue)
+                    {
                         edgeWeight = edge.Weight.Value;
+                    }
+                    else if (edge == null)
+                    {
+                        // Ребро не найдено, пропускаем
+                        continue;
+                    }
 
                     double newDist = distances[currentVertex] + edgeWeight;
 
@@ -210,27 +247,36 @@ namespace GraphEditor.Algorithms
         public void VisualizeResult(GraphVisualModel visualModel, AlgorithmResult result)
         {
             if (visualModel == null || result == null || !result.Success)
+            {
+                Console.WriteLine("VisualizeResult: invalid input");
                 return;
+            }
 
+            Console.WriteLine("Visualizing Dijkstra result...");
 
             // Выделяем начальную вершину
             if (result.Data.TryGetValue("startVertex", out object startObj) && startObj is string startVertex)
             {
                 visualModel.SetVertexColor(startVertex, Colors.Gold);
+                Console.WriteLine($"  Start vertex {startVertex} colored Gold");
 
                 // Выделяем конечную вершину и путь
                 if (result.Data.TryGetValue("endVertex", out object endObj) && endObj is string endVertex)
                 {
                     visualModel.SetVertexColor(endVertex, Colors.DarkGreen);
+                    Console.WriteLine($"  End vertex {endVertex} colored DarkGreen");
 
                     if (result.Data.TryGetValue("path", out object pathObj) && pathObj is List<string> path)
                     {
+                        Console.WriteLine($"  Path: {string.Join(" → ", path)}");
+
                         // Выделяем вершины пути
                         foreach (var vertexId in path)
                         {
                             if (vertexId != startVertex && vertexId != endVertex)
                             {
                                 visualModel.SetVertexColor(vertexId, Colors.Orange);
+                                Console.WriteLine($"  Path vertex {vertexId} colored Orange");
                             }
                         }
 
@@ -240,25 +286,43 @@ namespace GraphEditor.Algorithms
                             foreach (var edgeId in edges)
                             {
                                 visualModel.SetEdgeColor(edgeId, Colors.Red);
+                                Console.WriteLine($"  Path edge {edgeId} colored Red");
                             }
                         }
+                    }
+                    else
+                    {
+                        Console.WriteLine("  No specific path found");
                     }
                 }
                 else
                 {
-                    // Если конечная вершина не указана, просто показываем все достижимые вершины
+                    // Если конечная вершина не указана, показываем все достижимые вершины
+                    Console.WriteLine("  No end vertex specified, showing all reachable vertices");
                     if (result.Data.TryGetValue("distances", out object distObj) && distObj is Dictionary<string, double> distances)
                     {
                         foreach (var kvp in distances)
                         {
                             if (kvp.Key != startVertex && kvp.Value < double.PositiveInfinity)
                             {
-                                visualModel.SetVertexColor(kvp.Key, Colors.LightGreen);
+                                // Градиент цвета в зависимости от расстояния
+                                double maxDist = distances.Values.Where(v => v < double.PositiveInfinity).Max();
+                                double ratio = kvp.Value / maxDist;
+
+                                byte greenValue = (byte)(255 * (1 - ratio * 0.7));
+                                byte redValue = (byte)(255 * ratio * 0.7);
+
+                                var color = Color.FromRgb(redValue, greenValue, 100);
+                                visualModel.SetVertexColor(kvp.Key, color);
+
+                                Console.WriteLine($"  Vertex {kvp.Key} (distance {kvp.Value:F2}) colored");
                             }
                         }
                     }
                 }
             }
+
+            Console.WriteLine("Visualization complete");
         }
     }
 }

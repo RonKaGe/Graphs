@@ -11,8 +11,9 @@ namespace GraphEditor.Algorithms
     {
         public AlgorithmResult Execute(IGraphModel graph, string sourceId, string sinkId)
         {
-            Console.WriteLine($"MaxFlow.Execute вызван: source={sourceId}, sink={sinkId}");
-            Console.WriteLine($"Всего рёбер: {graph.Edges.Count}");
+            Console.WriteLine($"=== MaxFlow.Execute ===");
+            Console.WriteLine($"Source: {sourceId}, Sink: {sinkId}");
+            Console.WriteLine($"Total edges: {graph.Edges.Count}");
 
             var result = new AlgorithmResult();
 
@@ -22,14 +23,14 @@ namespace GraphEditor.Algorithms
                 if (!graph.Vertices.ContainsKey(sourceId))
                 {
                     result.Success = false;
-                    result.Message = $"Source vertex '{sourceId}' not found";
+                    result.Message = $"Source vertex '{sourceId}' not found. Available: {string.Join(", ", graph.Vertices.Keys)}";
                     return result;
                 }
 
                 if (!graph.Vertices.ContainsKey(sinkId))
                 {
                     result.Success = false;
-                    result.Message = $"Sink vertex '{sinkId}' not found";
+                    result.Message = $"Sink vertex '{sinkId}' not found. Available: {string.Join(", ", graph.Vertices.Keys)}";
                     return result;
                 }
 
@@ -40,27 +41,18 @@ namespace GraphEditor.Algorithms
                     return result;
                 }
 
-                // 2. Проверка capacity
-                bool hasCapacity = false;
+                // 2. Проверка capacity - используем вес как capacity если capacity не задано
+                Console.WriteLine("Edge capacities:");
                 foreach (var edge in graph.Edges.Values)
                 {
-                    if (edge.Capacity.HasValue)
-                    {
-                        hasCapacity = true;
-                        break;
-                    }
-                }
-
-                if (!hasCapacity)
-                {
-                    result.Success = false;
-                    result.Message = "Пропускная способность ребер не определена. Пожалуйста, сначала установите пропускную способность для ребер.";
-                    return result;
+                    double capacity = edge.Capacity ?? (edge.Weight ?? 1.0);
+                    Console.WriteLine($"  Edge {edge.Id} ({edge.Source}->{edge.Target}): capacity={capacity}");
                 }
 
                 // 3. Выполняем алгоритм Форда-Фалкерсона
                 double maxFlow = 0;
                 var flow = new Dictionary<string, double>();
+                var residualGraph = CreateResidualGraph(graph);
 
                 // Инициализируем поток нулями
                 foreach (var edge in graph.Edges.Values)
@@ -68,16 +60,22 @@ namespace GraphEditor.Algorithms
                     flow[edge.Id] = 0;
                 }
 
-                // Создаём остаточную сеть
-                var residualGraph = CreateResidualGraph(graph);
+                Console.WriteLine("Starting Ford-Fulkerson algorithm...");
+                int iteration = 0;
 
-                // Ищем увеличивающие пути
                 while (true)
                 {
+                    iteration++;
                     var augmentingPath = FindAugmentingPath(residualGraph, sourceId, sinkId);
 
                     if (augmentingPath.path == null || augmentingPath.bottleneck <= 0)
+                    {
+                        Console.WriteLine($"No more augmenting paths found after {iteration - 1} iterations");
                         break;
+                    }
+
+                    Console.WriteLine($"Iteration {iteration}: bottleneck={augmentingPath.bottleneck:F2}");
+                    Console.WriteLine($"  Path: {string.Join(" -> ", augmentingPath.path.Select(e => $"{e.Source}-{e.Target}"))}");
 
                     // Увеличиваем поток вдоль пути
                     UpdateFlowAlongPath(augmentingPath.path, augmentingPath.bottleneck, flow, residualGraph);
@@ -90,19 +88,32 @@ namespace GraphEditor.Algorithms
                 result.Data["flow"] = flow;
                 result.Data["source"] = sourceId;
                 result.Data["sink"] = sinkId;
-                result.Message = $"Maximum flow from '{sourceId}' to '{sinkId}' is {maxFlow:F2}";
+
+                // Добавляем информацию о потоках на рёбрах
+                var flowDetails = new List<string>();
+                foreach (var kvp in flow)
+                {
+                    if (kvp.Value > 0)
+                    {
+                        var edge = graph.Edges[kvp.Key];
+                        flowDetails.Add($"  {edge.Source}->{edge.Target}: {kvp.Value:F2}");
+                    }
+                }
+
+                result.Message = $"Maximum flow from '{sourceId}' to '{sinkId}' is {maxFlow:F2}\n" +
+                               $"Flow details:\n{string.Join("\n", flowDetails)}";
+
+                Console.WriteLine($"Max flow calculated: {maxFlow:F2}");
             }
             catch (Exception ex)
             {
+                Console.WriteLine($"Error in MaxFlow: {ex}");
                 result.Success = false;
                 result.Message = $"Error executing Ford-Fulkerson: {ex.Message}";
             }
 
             return result;
         }
-
-        // ... (остальные методы как в предыдущей версии, но адаптированные)
-        // Включу ключевые методы:
 
         private class ResidualEdge
         {
@@ -127,6 +138,8 @@ namespace GraphEditor.Algorithms
             {
                 double capacity = edge.Capacity ?? (edge.Weight ?? 1.0);
 
+                if (capacity <= 0) capacity = 1.0; // Минимальная capacity
+
                 // Прямое ребро
                 residualGraph[edge.Source].Add(new ResidualEdge
                 {
@@ -148,6 +161,8 @@ namespace GraphEditor.Algorithms
                     OriginalEdgeId = edge.Id,
                     IsReverse = true
                 });
+
+                Console.WriteLine($"  Added edge {edge.Source}->{edge.Target}: capacity={capacity}");
             }
 
             return residualGraph;
@@ -236,31 +251,51 @@ namespace GraphEditor.Algorithms
         public void VisualizeResult(GraphVisualModel visualModel, AlgorithmResult result)
         {
             if (visualModel == null || result == null || !result.Success)
+            {
+                Console.WriteLine("MaxFlow visualization: invalid input");
                 return;
+            }
 
+            Console.WriteLine("Visualizing MaxFlow result...");
 
             // Выделяем source и sink
             if (result.Data.TryGetValue("source", out object sourceObj) && sourceObj is string source)
             {
                 visualModel.SetVertexColor(source, Colors.Blue);
+                Console.WriteLine($"  Source vertex {source} colored Blue");
             }
 
             if (result.Data.TryGetValue("sink", out object sinkObj) && sinkObj is string sink)
             {
                 visualModel.SetVertexColor(sink, Colors.Red);
+                Console.WriteLine($"  Sink vertex {sink} colored Red");
             }
 
             // Выделяем рёбра с потоком > 0
             if (result.Data.TryGetValue("flow", out object flowObj) && flowObj is Dictionary<string, double> flow)
             {
+                double maxFlow = 0;
+                if (result.Data.TryGetValue("maxFlow", out object maxFlowObj))
+                    maxFlow = Convert.ToDouble(maxFlowObj);
+
                 foreach (var kvp in flow)
                 {
                     if (kvp.Value > 0)
                     {
-                        visualModel.SetEdgeColor(kvp.Key, Colors.Green);
+                        // Цвет зависит от величины потока (от зелёного к жёлтому)
+                        double ratio = maxFlow > 0 ? kvp.Value / maxFlow : 0;
+                        byte redValue = (byte)(255 * ratio);
+                        byte greenValue = (byte)(255 * (1 - ratio));
+
+                        var color = Color.FromRgb(redValue, greenValue, 0);
+                        visualModel.SetEdgeColor(kvp.Key, color);
+
+                        Console.WriteLine($"  Edge {kvp.Key}: flow={kvp.Value:F2}, colored (R:{redValue}, G:{greenValue})");
                     }
                 }
             }
+
+            Console.WriteLine("MaxFlow visualization complete");
         }
     }
 }
