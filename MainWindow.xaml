@@ -8,7 +8,7 @@
         Height="700" 
         Width="1000"
         WindowStartupLocation="CenterScreen">
-
+    
     <Window.Resources>
         <Style TargetType="Button">
             <Setter Property="Margin" Value="3,2"/>
@@ -19,14 +19,14 @@
             <Setter Property="BorderBrush" Value="#A9A9A9"/>
             <Setter Property="BorderThickness" Value="1"/>
         </Style>
-
+        
         <Style TargetType="Menu">
             <Setter Property="Background" Value="#2F4F4F"/>
             <Setter Property="Foreground" Value="White"/>
             <Setter Property="FontSize" Value="13"/>
             <Setter Property="Height" Value="28"/>
         </Style>
-
+        
         <Style TargetType="MenuItem">
             <Setter Property="Padding" Value="12,4"/>
             <Setter Property="Foreground" Value="White"/>
@@ -48,35 +48,36 @@
             <Setter Property="Margin" Value="5,2"/>
             <Setter Property="Height" Value="1"/>
         </Style>
-
+        
         <Style x:Key="ToolbarButton" TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
+           
             <Setter Property="Background" Value="#E6F3FF"/>
             <Setter Property="BorderBrush" Value="#87CEEB"/>
             <Setter Property="Margin" Value="4,2"/>
             <Setter Property="Padding" Value="8,4"/>
             <Setter Property="MinWidth" Value="85"/>
         </Style>
-
+        
         <Style x:Key="ModeButton" TargetType="Button" BasedOn="{StaticResource ToolbarButton}">
             <Setter Property="Background" Value="#F5F5DC"/>
             <Setter Property="BorderBrush" Value="#DAA520"/>
         </Style>
-
+        
         <Style x:Key="ActionButton" TargetType="Button" BasedOn="{StaticResource ToolbarButton}">
             <Setter Property="Background" Value="#F0FFF0"/>
             <Setter Property="BorderBrush" Value="#90EE90"/>
         </Style>
-
+        
         <Style x:Key="LayoutButton" TargetType="Button" BasedOn="{StaticResource ToolbarButton}">
             <Setter Property="Background" Value="#FFF0F5"/>
             <Setter Property="BorderBrush" Value="#DB7093"/>
         </Style>
-
+        
         <Style x:Key="UtilityButton" TargetType="Button" BasedOn="{StaticResource ToolbarButton}">
             <Setter Property="Background" Value="#FFFFE0"/>
             <Setter Property="BorderBrush" Value="#FFD700"/>
         </Style>
-
+        
         <!-- Стиль для фиксированных панелей -->
         <Style x:Key="FixedToolBar" TargetType="ToolBar">
             <Setter Property="IsEnabled" Value="True"/>
@@ -84,7 +85,7 @@
             <Setter Property="Focusable" Value="False"/>
         </Style>
     </Window.Resources>
-
+    
     <DockPanel>
         <!-- Меню (тёмное для контраста) -->
         <Menu DockPanel.Dock="Top">
@@ -94,32 +95,32 @@
                 <Separator/>
                 <MenuItem Header="❌ Exit" Name="MenuItemFileExit"/>
             </MenuItem>
-
+            
             <MenuItem Header="✏️ Edit" Background="#3A5F5F">
                 <MenuItem Header="📋 Select All" Name="MenuItemEditSelectAll"/>
                 <MenuItem Header="🧹 Clear Selection" Name="MenuItemEditClearSelection"/>
             </MenuItem>
-
+            
             <MenuItem Header="🎨 View" Background="#3A5F5F">
                 <MenuItem Header="🔄 Reset Colors" Name="MenuItemViewResetColors"/>
             </MenuItem>
-
+            
             <MenuItem Header="📐 Layout" Background="#3A5F5F">
                 <MenuItem Header="⭕ Circle Layout" Name="MenuItemLayoutCircle"/>
                 <MenuItem Header="🎲 Random Layout" Name="MenuItemLayoutRandom"/>
             </MenuItem>
-
+            
             <MenuItem Header="⚙️ Algorithms" Background="#3A5F5F">
                 <MenuItem Header="➡️ Dijkstra" Name="MenuItemAlgoDijkstra"/>
                 <MenuItem Header="🌳 MST (Prim)" Name="MenuItemAlgoMST"/>
                 <MenuItem Header="💧 Max Flow" Name="MenuItemAlgoMaxFlow"/>
             </MenuItem>
-
+            
             <MenuItem Header="❓ Help" Background="#3A5F5F">
                 <MenuItem Header="ℹ️ About" Name="MenuItemHelpAbout"/>
             </MenuItem>
         </Menu>
-
+        
         <!-- ФИКСИРОВАННАЯ панель инструментов (без возможности перемещения) -->
         <Grid DockPanel.Dock="Top" Background="#F5F5F5" Height="50">
             <Grid.ColumnDefinitions>
@@ -129,7 +130,7 @@
                 <ColumnDefinition Width="Auto"/>
                 <ColumnDefinition Width="*"/>
             </Grid.ColumnDefinitions>
-
+            
             <!-- Группа 1: Режимы работы - ФИКСИРОВАНА -->
             <Border Grid.Column="0" Background="#FFF8DC" Margin="5,3" Padding="5" 
                     BorderBrush="#DAA520" BorderThickness="1" CornerRadius="3">
@@ -144,7 +145,7 @@
                             VerticalAlignment="Center" Margin="5,0,0,0"/>
                 </StackPanel>
             </Border>
-
+            
             <!-- Группа 2: Добавление элементов - ФИКСИРОВАНА -->
             <Border Grid.Column="1" Background="#F0FFF0" Margin="5,3" Padding="5"
                     BorderBrush="#90EE90" BorderThickness="1" CornerRadius="3">
@@ -159,7 +160,7 @@
                             VerticalAlignment="Center" Margin="5,0,0,0"/>
                 </StackPanel>
             </Border>
-
+            
             <!-- Группа 3: Layout алгоритмы - ФИКСИРОВАНА -->
             <Border Grid.Column="2" Background="#F5F0FF" Margin="5,3" Padding="5"
                     BorderBrush="#DB7093" BorderThickness="1" CornerRadius="3">
@@ -174,7 +175,7 @@
                             VerticalAlignment="Center" Margin="5,0,0,0"/>
                 </StackPanel>
             </Border>
-
+            
             <!-- Группа 4: Утилиты - ФИКСИРОВАНА -->
             <Border Grid.Column="3" Background="#FFF0F5" Margin="5,3" Padding="5"
                     BorderBrush="#FFD700" BorderThickness="1" CornerRadius="3">
@@ -187,9 +188,16 @@
                     <Button Name="BtnDelete" Style="{StaticResource UtilityButton}" 
                             Content="🗑️ Delete" ToolTip="Delete selected element (or press Delete key)"
                             VerticalAlignment="Center" Margin="5,0,0,0"/>
+                    <Separator Width="10" Background="Transparent"/>
+                    <Button Name="BtnAlgorithms" Style="{StaticResource UtilityButton}" 
+                Content="⚡ Algorithms" ToolTip="Run graph algorithms"
+                VerticalAlignment="Center" Margin="5,0,0,0"/>
+                    <Button Name="BtnResetAlgorithm" Style="{StaticResource UtilityButton}" 
+                Content="🔄 Reset View" ToolTip="Reset algorithm visualization"
+                VerticalAlignment="Center" Margin="5,0,0,0"/>
                 </StackPanel>
             </Border>
-
+            
             <!-- Пустое пространство справа -->
             <Border Grid.Column="4" Background="Transparent">
                 <TextBlock Text="Graph Editor" VerticalAlignment="Center" HorizontalAlignment="Right"

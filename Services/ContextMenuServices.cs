@@ -12,6 +12,9 @@ namespace GraphEditor.Services
         private readonly CommandService _commandService;
         private readonly IGraphModel _graphModel;
 
+        // Событие для "Start Edge From Here"
+        public event Action<string> StartEdgeFromVertexRequested;
+
         public ContextMenuService(CommandService commandService, IGraphModel graphModel)
         {
             _commandService = commandService ?? throw new ArgumentNullException(nameof(commandService));
@@ -28,19 +31,9 @@ namespace GraphEditor.Services
                 Header = "🗑️ Delete Vertex",
                 Tag = vertexId,
                 FontSize = 12,
-                Padding = new Thickness(8, 4, 8, 4)  // Исправлено
+                Padding = new Thickness(8, 4, 8, 4)
             };
             deleteItem.Click += (s, e) => DeleteVertex(vertexId);
-
-            // Change Label
-            var changeLabelItem = new MenuItem
-            {
-                Header = "✏️ Change Label",
-                Tag = vertexId,
-                FontSize = 12,
-                Padding = new Thickness(8, 4, 8, 4)  // Исправлено
-            };
-            changeLabelItem.Click += (s, e) => ChangeVertexLabel(vertexId);
 
             // Change Color
             var changeColorItem = new MenuItem
@@ -48,25 +41,49 @@ namespace GraphEditor.Services
                 Header = "🎨 Change Color",
                 Tag = vertexId,
                 FontSize = 12,
-                Padding = new Thickness(8, 4, 8, 4)  // Исправлено
+                Padding = new Thickness(8, 4, 8, 4)
             };
             changeColorItem.Click += (s, e) => ShowColorMenuForVertex(vertexId, position);
 
-            // Add Edge From Here
-            var addEdgeItem = new MenuItem
+            // Start Edge From Here
+            var startEdgeItem = new MenuItem
             {
-                Header = "➖ Add Edge From Here",
+                Header = "➖ Start Edge From Here",
                 Tag = vertexId,
                 FontSize = 12,
-                Padding = new Thickness(8, 4, 8, 4)  // Исправлено
+                Padding = new Thickness(8, 4, 8, 4)
             };
-            addEdgeItem.Click += (s, e) => StartEdgeFromVertex(vertexId);
+            startEdgeItem.Click += (s, e) =>
+            {
+                // Вызываем событие
+                StartEdgeFromVertexRequested?.Invoke(vertexId);
+            };
 
-            menu.Items.Add(changeLabelItem);
+            // Добавляем пункты
             menu.Items.Add(changeColorItem);
-            menu.Items.Add(addEdgeItem);
+            menu.Items.Add(startEdgeItem);
             menu.Items.Add(new Separator());
             menu.Items.Add(deleteItem);
+
+            menu.Placement = System.Windows.Controls.Primitives.PlacementMode.MousePoint;
+            menu.IsOpen = true;
+        }
+
+        // НОВЫЙ МЕТОД: Контекстное меню для пустого места
+        public void ShowEmptySpaceContextMenu(Point position)
+        {
+            var menu = new ContextMenu();
+
+            // Add Vertex
+            var addVertexItem = new MenuItem
+            {
+                Header = "🟊 Add Vertex Here",
+                FontSize = 12,
+                Padding = new Thickness(8, 4, 8, 4)
+            };
+            addVertexItem.Click += (s, e) => AddVertexAtPosition(position);
+
+            menu.Items.Add(addVertexItem);
 
             menu.Placement = System.Windows.Controls.Primitives.PlacementMode.MousePoint;
             menu.IsOpen = true;
@@ -85,7 +102,7 @@ namespace GraphEditor.Services
                 Header = $"⚖️ Change Weight (current: {edge.Weight ?? 1})",
                 Tag = edgeId,
                 FontSize = 12,
-                Padding = new Thickness(8, 4, 8, 4)  // Исправлено
+                Padding = new Thickness(8, 4, 8, 4)
             };
             changeWeightItem.Click += (s, e) => ChangeEdgeWeight(edgeId);
 
@@ -95,7 +112,7 @@ namespace GraphEditor.Services
                 Header = "🎨 Change Color",
                 Tag = edgeId,
                 FontSize = 12,
-                Padding = new Thickness(8, 4, 8, 4)  // Исправлено
+                Padding = new Thickness(8, 4, 8, 4)
             };
             changeColorItem.Click += (s, e) => ShowColorMenuForEdge(edgeId, position);
 
@@ -105,7 +122,7 @@ namespace GraphEditor.Services
                 Header = "🗑️ Delete Edge",
                 Tag = edgeId,
                 FontSize = 12,
-                Padding = new Thickness(8, 4, 8, 4)  // Исправлено
+                Padding = new Thickness(8, 4, 8, 4)
             };
             deleteItem.Click += (s, e) => DeleteEdge(edgeId);
 
@@ -146,18 +163,9 @@ namespace GraphEditor.Services
             }
         }
 
-        private void ChangeVertexLabel(string vertexId)
+        private void AddVertexAtPosition(Point position)
         {
-            var currentLabel = _graphModel.Vertices[vertexId].Label ?? "";
-            var dialog = new InputDialog(
-                $"Enter new label for vertex {vertexId}:",
-                "Change Label",
-                currentLabel);
-
-            if (dialog.ShowDialog() == true)
-            {
-                _commandService.SetVertexLabel(vertexId, dialog.Answer);
-            }
+            _commandService.AddVertexAtPosition(position);
         }
 
         private void ChangeEdgeWeight(string edgeId)
@@ -197,7 +205,7 @@ namespace GraphEditor.Services
                     Header = colorInfo.Name,
                     Background = new SolidColorBrush(colorInfo.Color),
                     FontSize = 12,
-                    Padding = new Thickness(8, 4, 8, 4),  // Исправлено
+                    Padding = new Thickness(8, 4, 8, 4),
                     Tag = colorInfo.Color
                 };
 
@@ -232,7 +240,7 @@ namespace GraphEditor.Services
                     Header = colorInfo.Name,
                     Background = new SolidColorBrush(colorInfo.Color),
                     FontSize = 12,
-                    Padding = new Thickness(8, 4, 8, 4),  // Исправлено
+                    Padding = new Thickness(8, 4, 8, 4),
                     Tag = colorInfo.Color
                 };
 
@@ -245,17 +253,9 @@ namespace GraphEditor.Services
             menu.Placement = System.Windows.Controls.Primitives.PlacementMode.MousePoint;
             menu.IsOpen = true;
         }
-
-        private void StartEdgeFromVertex(string vertexId)
-        {
-            // Эта функция может быть связана с InteractionService
-            // Пока просто сообщение
-            MessageBox.Show($"Would start edge from vertex {vertexId}\n(Connect to another vertex)",
-                "Add Edge", MessageBoxButton.OK, MessageBoxImage.Information);
-        }
     }
 
-    // Копия InputDialog из MainWindow (чтобы не было зависимостей)
+    // Копия InputDialog
     public class InputDialog : Window
     {
         public string Answer { get; private set; }
@@ -267,18 +267,18 @@ namespace GraphEditor.Services
             Height = 150;
             WindowStartupLocation = WindowStartupLocation.CenterOwner;
 
-            var stackPanel = new StackPanel { Margin = new Thickness(10, 10, 10, 10) };  // Исправлено
+            var stackPanel = new StackPanel { Margin = new Thickness(10, 10, 10, 10) };
 
             stackPanel.Children.Add(new TextBlock
             {
                 Text = question,
-                Margin = new Thickness(0, 0, 0, 10)  // Исправлено
+                Margin = new Thickness(0, 0, 0, 10)
             });
 
             var textBox = new TextBox
             {
                 Text = defaultValue,
-                Margin = new Thickness(0, 0, 0, 10)  // Исправлено
+                Margin = new Thickness(0, 0, 0, 10)
             };
             stackPanel.Children.Add(textBox);
 
@@ -292,7 +292,7 @@ namespace GraphEditor.Services
             {
                 Content = "OK",
                 Width = 80,
-                Margin = new Thickness(0, 0, 10, 0),  // Исправлено
+                Margin = new Thickness(0, 0, 10, 0),
                 IsDefault = true
             };
             okButton.Click += (s, e) =>
