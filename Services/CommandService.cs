@@ -13,6 +13,7 @@ namespace GraphEditor.Services
     {
         private readonly IGraphModel _graphModel;
         private readonly GraphVisualModel _visualModel;
+        private readonly GraphFileService _fileService;
 
         public event Action<string> OperationCompleted;
         public event Action<string> ErrorOccurred;
@@ -22,6 +23,9 @@ namespace GraphEditor.Services
         {
             _graphModel = graphModel ?? throw new ArgumentNullException(nameof(graphModel));
             _visualModel = visualModel ?? throw new ArgumentNullException(nameof(visualModel));
+
+            // Создаем сервис для работы с файлами
+            _fileService = new GraphFileService();
         }
 
         // === Операции с вершинами ===
@@ -211,29 +215,22 @@ namespace GraphEditor.Services
             }
         }
 
-        // === Файловые операции ===
+        // === Файловые операции (ОБНОВЛЕНЫ!) ===
 
         public void SaveGraph(string filePath)
         {
             try
             {
-                // Простая сериализация
-                using var writer = new StreamWriter(filePath);
-                writer.WriteLine("Graph Data:");
-                writer.WriteLine($"Vertices: {_graphModel.Vertices.Count}");
-                writer.WriteLine($"Edges: {_graphModel.Edges.Count}");
-
-                foreach (var vertex in _graphModel.Vertices.Values)
+                // Используем GraphFileService для сохранения в JSON формате
+                if (_graphModel is GraphModel concreteGraphModel)
                 {
-                    writer.WriteLine($"Vertex: {vertex.Id}, Label: {vertex.Label}");
+                    _fileService.SaveGraph(filePath, concreteGraphModel, _visualModel);
+                    OperationCompleted?.Invoke($"Graph saved to {Path.GetFileName(filePath)}");
                 }
-
-                foreach (var edge in _graphModel.Edges.Values)
+                else
                 {
-                    writer.WriteLine($"Edge: {edge.Id}, {edge.Source}->{edge.Target}, Weight: {edge.Weight}");
+                    throw new InvalidOperationException("Cannot save: graph model type not supported");
                 }
-
-                OperationCompleted?.Invoke($"Graph saved to {Path.GetFileName(filePath)}");
             }
             catch (Exception ex)
             {
@@ -245,19 +242,91 @@ namespace GraphEditor.Services
         {
             try
             {
-                // Простая заглушка для загрузки
-                if (File.Exists(filePath))
-                {
-                    OperationCompleted?.Invoke($"Graph loaded from {Path.GetFileName(filePath)}");
-                }
-                else
+                if (!File.Exists(filePath))
                 {
                     ErrorOccurred?.Invoke($"File not found: {filePath}");
+                    return;
                 }
+
+                if (!_fileService.IsValidGraphFile(filePath))
+                {
+                    ErrorOccurred?.Invoke($"File '{Path.GetFileName(filePath)}' is not a valid graph file");
+                    return;
+                }
+
+                // Загружаем граф через GraphFileService
+                var (loadedGraphModel, loadedVisualModel) = _fileService.LoadGraph(filePath);
+
+                // Копируем данные из загруженного графа в текущий
+                CopyGraphData(loadedGraphModel, loadedVisualModel);
+
+                OperationCompleted?.Invoke($"Graph loaded from {Path.GetFileName(filePath)}");
+                VisualChanged?.Invoke();
             }
             catch (Exception ex)
             {
                 ErrorOccurred?.Invoke($"Failed to load graph: {ex.Message}");
+            }
+        }
+
+        private void CopyGraphData(GraphModel sourceGraphModel, IGraphVisualModel sourceVisualModel)
+        {
+            // Очищаем текущий граф
+            ClearCurrentGraph();
+
+            // Копируем свойства графа
+            // Note: В текущей реализации GraphModel не имеет сеттеров для IsDirected и других свойств
+            // Может потребоваться создать новый экземпляр GraphModel или добавить методы для изменения этих свойств
+
+            // Добавляем вершины
+            foreach (var vertex in sourceGraphModel.Vertices.Values)
+            {
+                _graphModel.AddVertex(vertex.Id, vertex.Label);
+            }
+
+            // Добавляем рёбра
+            foreach (var edge in sourceGraphModel.Edges.Values)
+            {
+                _graphModel.AddEdge(edge.Id, edge.Source, edge.Target, edge.Weight, edge.Capacity);
+            }
+
+            // Копируем визуальные данные
+            if (sourceVisualModel is GraphVisualModel concreteVisualModel)
+            {
+                // Позиции вершин
+                foreach (var position in concreteVisualModel.VertexPositions)
+                {
+                    _visualModel.SetVertexPosition(position.Key, position.Value);
+                }
+
+                // Цвета вершин
+                foreach (var color in concreteVisualModel.VertexColors)
+                {
+                    _visualModel.SetVertexColor(color.Key, color.Value);
+                }
+
+                // Цвета рёбер
+                foreach (var color in concreteVisualModel.EdgeColors)
+                {
+                    _visualModel.SetEdgeColor(color.Key, color.Value);
+                }
+            }
+        }
+
+        private void ClearCurrentGraph()
+        {
+            // Удаляем все рёбра
+            var edgesToRemove = _graphModel.Edges.Keys.ToList();
+            foreach (var edgeId in edgesToRemove)
+            {
+                _graphModel.RemoveEdge(edgeId);
+            }
+
+            // Удаляем все вершины
+            var verticesToRemove = _graphModel.Vertices.Keys.ToList();
+            foreach (var vertexId in verticesToRemove)
+            {
+                _graphModel.RemoveVertex(vertexId);
             }
         }
 
